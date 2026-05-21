@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.entity.CompanyDataEntity
 import com.warestat.android.i18n.AppStrings
 import com.warestat.android.i18n.LocalStrings
+import com.warestat.android.ui.screens.language.languageOptions
 import com.warestat.android.ui.theme.*
 import com.warestat.android.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
@@ -190,6 +191,9 @@ private fun CompanyDataTab(companyData: CompanyDataEntity?, viewModel: SettingsV
 
 @Composable
 private fun AppearanceTab(settings: com.warestat.android.util.AppSettings, viewModel: SettingsViewModel, strings: AppStrings) {
+    var showLanguageDropdown by remember { mutableStateOf(false) }
+    val currentLang = languageOptions.find { it.code == settings.selectedLanguage } ?: languageOptions.first()
+
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -206,6 +210,33 @@ private fun AppearanceTab(settings: com.warestat.android.util.AppSettings, viewM
                         Text(strings.darkTheme, fontWeight = FontWeight.Medium)
                     }
                     Switch(checked = settings.darkTheme, onCheckedChange = { viewModel.updateDarkTheme(it) })
+                }
+            }
+        }
+
+        Card(elevation = CardDefaults.cardElevation(1.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Language, null, tint = Primary, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(strings.languageLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                }
+                Box {
+                    OutlinedButton(onClick = { showLanguageDropdown = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${currentLang.flag}  ${currentLang.nativeName}", modifier = Modifier.weight(1f))
+                        Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(18.dp))
+                    }
+                    DropdownMenu(expanded = showLanguageDropdown, onDismissRequest = { showLanguageDropdown = false }) {
+                        languageOptions.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Text("${lang.flag}  ${lang.nativeName}") },
+                                onClick = { viewModel.updateLanguage(lang.code); showLanguageDropdown = false },
+                                leadingIcon = if (lang.code == settings.selectedLanguage) ({
+                                    Icon(Icons.Default.Check, null, tint = Primary, modifier = Modifier.size(16.dp))
+                                }) else null
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -60,6 +60,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsManager.updateDarkTheme(dark) }
     }
 
+    fun updateLanguage(code: String) {
+        viewModelScope.launch { settingsManager.updateLanguage(code) }
+    }
+
     fun saveCompanyData(data: CompanyDataEntity) {
         viewModelScope.launch {
             try {
