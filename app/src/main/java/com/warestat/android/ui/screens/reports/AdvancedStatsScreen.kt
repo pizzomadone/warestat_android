@@ -22,24 +22,26 @@ import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.viewmodel.ReportsViewModel
 
 @Composable
 fun AdvancedStatsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Statistiche Avanzate", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(strings.advancedStatsTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             if (state.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
         }
         Spacer(Modifier.height(8.dp))
 
         // Period selector
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(6 to "6 mesi", 12 to "12 mesi", 24 to "24 mesi").forEach { (months, label) ->
+            listOf(6 to strings.sixMonths, 12 to strings.twelveMonths, 24 to strings.twentyFourMonths).forEach { (months, label) ->
                 FilterChip(
                     selected = state.selectedPeriodMonths == months,
                     onClick = { viewModel.setPeriod(months) },
@@ -50,28 +52,28 @@ fun AdvancedStatsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
         Spacer(Modifier.height(8.dp))
 
         TabRow(selectedTabIndex = selectedTab) {
-            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Trend Vendite") })
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Top Prodotti") })
+            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(strings.trendSalesTab) })
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(strings.topProductsTab) })
         }
         Spacer(Modifier.height(8.dp))
 
         when (selectedTab) {
-            0 -> SalesTrendTab(state.monthlySales)
-            1 -> TopProductsTab(state.topProducts)
+            0 -> SalesTrendTab(state.monthlySales, strings)
+            1 -> TopProductsTab(state.topProducts, strings)
         }
     }
 }
 
 @Composable
-private fun SalesTrendTab(monthlySales: List<com.warestat.android.data.database.dao.MonthlySalesData>) {
+private fun SalesTrendTab(monthlySales: List<com.warestat.android.data.database.dao.MonthlySalesData>, strings: com.warestat.android.i18n.AppStrings) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Text("Andamento mensile ricavi", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(strings.monthlyRevenueTrend, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
             if (monthlySales.isEmpty()) {
                 Card(Modifier.fillMaxWidth()) {
                     Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                        Text("Nessun dato disponibile", color = Color.Gray)
+                        Text(strings.noDataAvailable, color = Color.Gray)
                     }
                 }
             } else {
@@ -97,7 +99,7 @@ private fun SalesTrendTab(monthlySales: List<com.warestat.android.data.database.
                         update = { chart ->
                             val labels = monthlySales.map { it.month }
                             val entries = monthlySales.mapIndexed { i, data -> Entry(i.toFloat(), data.total.toFloat()) }
-                            val dataSet = LineDataSet(entries, "Ricavi (€)").apply {
+                            val dataSet = LineDataSet(entries, strings.revenueCol + " (€)").apply {
                                 color = AndroidColor.parseColor("#3498DB")
                                 valueTextSize = 8f
                                 setCircleColor(AndroidColor.parseColor("#3498DB"))
@@ -116,7 +118,7 @@ private fun SalesTrendTab(monthlySales: List<com.warestat.android.data.database.
             }
         }
         item {
-            Text("Numero ordini mensile", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(strings.monthlyOrderCount, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
             if (monthlySales.isNotEmpty()) {
                 Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
@@ -132,7 +134,7 @@ private fun SalesTrendTab(monthlySales: List<com.warestat.android.data.database.
                         update = { chart ->
                             val labels = monthlySales.map { it.month }
                             val entries = monthlySales.mapIndexed { i, data -> Entry(i.toFloat(), data.numOrders.toFloat()) }
-                            val dataSet = LineDataSet(entries, "N. Ordini").apply {
+                            val dataSet = LineDataSet(entries, strings.ordersLabel).apply {
                                 color = AndroidColor.parseColor("#27AE60"); valueTextSize = 8f
                                 setCircleColor(AndroidColor.parseColor("#27AE60")); circleRadius = 4f; lineWidth = 2f
                                 mode = LineDataSet.Mode.CUBIC_BEZIER; setDrawFilled(true); fillColor = AndroidColor.parseColor("#8027AE60")
@@ -147,13 +149,13 @@ private fun SalesTrendTab(monthlySales: List<com.warestat.android.data.database.
         // Monthly summary table
         if (monthlySales.isNotEmpty()) {
             item {
-                Text("Riepilogo mensile", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(strings.monthlySummary, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             }
             items(monthlySales.reversed()) { data ->
                 Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(0.dp)) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(data.month, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
-                        Text("${data.numOrders} ordini", modifier = Modifier.width(90.dp), fontSize = 12.sp, color = Color.Gray)
+                        Text("${data.numOrders} ${strings.ordersLabel.lowercase()}", modifier = Modifier.width(90.dp), fontSize = 12.sp, color = Color.Gray)
                         Text("€ %.2f".format(data.total), fontWeight = FontWeight.SemiBold, color = Success)
                     }
                     Divider(color = Color.LightGray, thickness = 0.5.dp)
@@ -164,11 +166,11 @@ private fun SalesTrendTab(monthlySales: List<com.warestat.android.data.database.
 }
 
 @Composable
-private fun TopProductsTab(topProducts: List<com.warestat.android.data.database.dao.ProductSalesData>) {
+private fun TopProductsTab(topProducts: List<com.warestat.android.data.database.dao.ProductSalesData>, strings: com.warestat.android.i18n.AppStrings) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (topProducts.isNotEmpty()) {
             item {
-                Text("Distribuzione ricavi", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(strings.revenueDistribution, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
                 Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
                     val pieColors = listOf(
@@ -201,9 +203,9 @@ private fun TopProductsTab(topProducts: List<com.warestat.android.data.database.
                 }
             }
         }
-        item { Text("Top 10 prodotti per ricavi", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
+        item { Text(strings.top10ByRevenue, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold) }
         if (topProducts.isEmpty()) {
-            item { Text("Nessun dato disponibile", color = Color.Gray, modifier = Modifier.padding(8.dp)) }
+            item { Text(strings.noDataAvailable, color = Color.Gray, modifier = Modifier.padding(8.dp)) }
         } else {
             items(topProducts.take(10).withIndex().toList(), key = { it.index }) { (index, product) ->
                 Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
@@ -211,7 +213,7 @@ private fun TopProductsTab(topProducts: List<com.warestat.android.data.database.
                         Text("${index + 1}", modifier = Modifier.width(28.dp), fontWeight = FontWeight.Bold, color = Primary, fontSize = 14.sp)
                         Column(Modifier.weight(1f)) {
                             Text(product.name, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1)
-                            Text("${product.numOrders} ordini · ${product.totalQuantity} pz venduti", fontSize = 11.sp, color = Color.Gray)
+                            Text("${product.numOrders} ${strings.ordersLabel.lowercase()} · ${product.totalQuantity} ${strings.qtyCol.lowercase()}", fontSize = 11.sp, color = Color.Gray)
                         }
                         Text("€ %.2f".format(product.revenue), fontWeight = FontWeight.Bold, color = Success, fontSize = 13.sp)
                     }

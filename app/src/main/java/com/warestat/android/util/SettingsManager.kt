@@ -21,7 +21,8 @@ data class AppSettings(
     val retentionDays: Int = 7,
     val darkTheme: Boolean = false,
     val companyName: String = "",
-    val eulaAccepted: Boolean = false
+    val eulaAccepted: Boolean = false,
+    val selectedLanguage: String = ""
 )
 
 @Singleton
@@ -37,6 +38,7 @@ class SettingsManager @Inject constructor(
         val KEY_RETENTION_DAYS = intPreferencesKey("retention_days")
         val KEY_DARK_THEME = booleanPreferencesKey("dark_theme")
         val KEY_EULA_ACCEPTED = booleanPreferencesKey("eula_accepted")
+        val KEY_LANGUAGE = stringPreferencesKey("selected_language")
     }
 
     val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -48,7 +50,8 @@ class SettingsManager @Inject constructor(
             backupIntervalHours = prefs[KEY_BACKUP_INTERVAL] ?: 24,
             retentionDays = prefs[KEY_RETENTION_DAYS] ?: 7,
             darkTheme = prefs[KEY_DARK_THEME] ?: false,
-            eulaAccepted = prefs[KEY_EULA_ACCEPTED] ?: false
+            eulaAccepted = prefs[KEY_EULA_ACCEPTED] ?: false,
+            selectedLanguage = prefs[KEY_LANGUAGE] ?: ""
         )
     }
 
@@ -81,5 +84,9 @@ class SettingsManager @Inject constructor(
 
     suspend fun markEulaAccepted() {
         context.dataStore.edit { it[KEY_EULA_ACCEPTED] = true }
+    }
+
+    suspend fun updateLanguage(code: String) {
+        context.dataStore.edit { it[KEY_LANGUAGE] = code }
     }
 }

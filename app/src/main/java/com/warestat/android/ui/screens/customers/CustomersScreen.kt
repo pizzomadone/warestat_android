@@ -15,23 +15,25 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.entity.CustomerEntity
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.viewmodel.CustomersViewModel
 
 @Composable
 fun CustomersScreen(viewModel: CustomersViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
     var editingCustomer by remember { mutableStateOf<CustomerEntity?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<CustomerEntity?>(null) }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Clienti", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(strings.customersTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = viewModel::setSearchQuery,
-            placeholder = { Text("Cerca clienti...") },
+            placeholder = { Text(strings.searchCustomers) },
             leadingIcon = { Icon(Icons.Default.Search, null) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -39,9 +41,9 @@ fun CustomersScreen(viewModel: CustomersViewModel = hiltViewModel()) {
         Spacer(Modifier.height(8.dp))
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("${state.customers.size} clienti", style = MaterialTheme.typography.bodyMedium)
+            Text("${state.customers.size} ${strings.customersTitle.lowercase()}", style = MaterialTheme.typography.bodyMedium)
             FloatingActionButton(onClick = { editingCustomer = null; showDialog = true }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.Add, "Nuovo cliente")
+                Icon(Icons.Default.Add, strings.newCustomer)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -71,14 +73,14 @@ fun CustomersScreen(viewModel: CustomersViewModel = hiltViewModel()) {
     showDeleteConfirm?.let { customer ->
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Elimina cliente") },
-            text = { Text("Eliminare ${customer.firstName} ${customer.lastName}?") },
+            title = { Text(strings.deleteCustomerTitle) },
+            text = { Text("${strings.delete} ${customer.firstName} ${customer.lastName}?") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteCustomer(customer); showDeleteConfirm = null }) {
-                    Text("Elimina", color = MaterialTheme.colorScheme.error)
+                    Text(strings.delete, color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Annulla") } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(strings.cancel) } }
         )
     }
 
@@ -92,6 +94,7 @@ fun CustomersScreen(viewModel: CustomersViewModel = hiltViewModel()) {
 
 @Composable
 private fun CustomerCard(customer: CustomerEntity, onEdit: (CustomerEntity) -> Unit, onDelete: (CustomerEntity) -> Unit) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onEdit(customer) },
         elevation = CardDefaults.cardElevation(1.dp)
@@ -105,14 +108,15 @@ private fun CustomerCard(customer: CustomerEntity, onEdit: (CustomerEntity) -> U
                 if (customer.phone.isNotEmpty()) Text(customer.phone, style = MaterialTheme.typography.bodyMedium)
                 if (customer.address.isNotEmpty()) Text(customer.address, style = MaterialTheme.typography.bodyMedium)
             }
-            IconButton(onClick = { onEdit(customer) }) { Icon(Icons.Default.Edit, "Modifica") }
-            IconButton(onClick = { onDelete(customer) }) { Icon(Icons.Default.Delete, "Elimina", tint = MaterialTheme.colorScheme.error) }
+            IconButton(onClick = { onEdit(customer) }) { Icon(Icons.Default.Edit, strings.edit) }
+            IconButton(onClick = { onDelete(customer) }) { Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error) }
         }
     }
 }
 
 @Composable
 private fun CustomerDialog(customer: CustomerEntity?, onDismiss: () -> Unit, onSave: (CustomerEntity) -> Unit) {
+    val strings = LocalStrings.current
     var firstName by remember { mutableStateOf(customer?.firstName ?: "") }
     var lastName by remember { mutableStateOf(customer?.lastName ?: "") }
     var email by remember { mutableStateOf(customer?.email ?: "") }
@@ -123,20 +127,20 @@ private fun CustomerDialog(customer: CustomerEntity?, onDismiss: () -> Unit, onS
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (customer == null) "Nuovo cliente" else "Modifica cliente") },
+        title = { Text(if (customer == null) strings.newCustomer else strings.editCustomer) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = firstName, onValueChange = { firstName = it; firstNameError = false },
-                    label = { Text("Nome *") }, isError = firstNameError, modifier = Modifier.fillMaxWidth(), singleLine = true
+                    label = { Text(strings.firstName) }, isError = firstNameError, modifier = Modifier.fillMaxWidth(), singleLine = true
                 )
                 OutlinedTextField(
                     value = lastName, onValueChange = { lastName = it; lastNameError = false },
-                    label = { Text("Cognome *") }, isError = lastNameError, modifier = Modifier.fillMaxWidth(), singleLine = true
+                    label = { Text(strings.lastName) }, isError = lastNameError, modifier = Modifier.fillMaxWidth(), singleLine = true
                 )
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Telefono") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text("Indirizzo") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(strings.email) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(strings.phone) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text(strings.address) }, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
@@ -147,8 +151,8 @@ private fun CustomerDialog(customer: CustomerEntity?, onDismiss: () -> Unit, onS
                     onSave(CustomerEntity(id = customer?.id ?: 0, firstName = firstName.trim(), lastName = lastName.trim(),
                         email = email.trim(), phone = phone.trim(), address = address.trim()))
                 }
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }

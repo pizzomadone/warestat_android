@@ -19,12 +19,16 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.entity.CompanyDataEntity
+import com.warestat.android.i18n.AppStrings
+import com.warestat.android.i18n.LocalStrings
+import com.warestat.android.ui.screens.language.languageOptions
 import com.warestat.android.ui.theme.*
 import com.warestat.android.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -32,32 +36,32 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
     LaunchedEffect(state.successMessage, state.error) {
         state.successMessage?.let { scope.launch { snackbarHostState.showSnackbar(it) }; viewModel.clearMessages() }
-        state.error?.let { scope.launch { snackbarHostState.showSnackbar("Errore: $it") }; viewModel.clearMessages() }
+        state.error?.let { scope.launch { snackbarHostState.showSnackbar("${strings.error}$it") }; viewModel.clearMessages() }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(top = 16.dp, start = 16.dp, end = 16.dp)) {
-            Text("Impostazioni", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(strings.settingsTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
 
             TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Generali") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Azienda") })
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Aspetto") })
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(strings.generalTab) })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(strings.companyTab) })
+                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text(strings.appearanceTab) })
             }
             Spacer(Modifier.height(8.dp))
 
             when (selectedTab) {
-                0 -> GeneralSettingsTab(state.settings, viewModel)
-                1 -> CompanyDataTab(state.companyData, viewModel)
-                2 -> AppearanceTab(state.settings, viewModel)
+                0 -> GeneralSettingsTab(state.settings, viewModel, strings)
+                1 -> CompanyDataTab(state.companyData, viewModel, strings)
+                2 -> AppearanceTab(state.settings, viewModel, strings)
             }
         }
     }
 }
 
 @Composable
-private fun GeneralSettingsTab(settings: com.warestat.android.util.AppSettings, viewModel: SettingsViewModel) {
+private fun GeneralSettingsTab(settings: com.warestat.android.util.AppSettings, viewModel: SettingsViewModel, strings: AppStrings) {
     var currency by remember(settings.currency) { mutableStateOf(settings.currency) }
     var currencySymbol by remember(settings.currencySymbol) { mutableStateOf(settings.currencySymbol) }
     var defaultVat by remember(settings.defaultVatRate) { mutableStateOf(settings.defaultVatRate.toString()) }
@@ -72,14 +76,14 @@ private fun GeneralSettingsTab(settings: com.warestat.android.util.AppSettings, 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Euro, null, tint = Primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Valuta", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(strings.currency, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = currency, onValueChange = { currency = it }, label = { Text("Codice valuta") }, modifier = Modifier.weight(1f), singleLine = true, placeholder = { Text("EUR") })
-                    OutlinedTextField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = { Text("Simbolo") }, modifier = Modifier.weight(0.5f), singleLine = true, placeholder = { Text("€") })
+                    OutlinedTextField(value = currency, onValueChange = { currency = it }, label = { Text(strings.currency) }, modifier = Modifier.weight(1f), singleLine = true, placeholder = { Text("EUR") })
+                    OutlinedTextField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = { Text(strings.currencySymbol) }, modifier = Modifier.weight(0.5f), singleLine = true, placeholder = { Text("€") })
                 }
                 Button(onClick = { viewModel.updateCurrency(currency.trim(), currencySymbol.trim()) }, modifier = Modifier.align(Alignment.End)) {
-                    Text("Salva valuta")
+                    Text(strings.save)
                 }
             }
         }
@@ -90,15 +94,15 @@ private fun GeneralSettingsTab(settings: com.warestat.android.util.AppSettings, 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Percent, null, tint = Primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("IVA predefinita", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(strings.defaultVat, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
                 OutlinedTextField(
                     value = defaultVat, onValueChange = { defaultVat = it },
-                    label = { Text("Aliquota IVA (%)") }, modifier = Modifier.fillMaxWidth(),
+                    label = { Text(strings.defaultVat) }, modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true
                 )
                 Button(onClick = { viewModel.updateDefaultVat(defaultVat.toDoubleOrNull() ?: 22.0) }, modifier = Modifier.align(Alignment.End)) {
-                    Text("Salva IVA")
+                    Text(strings.save)
                 }
             }
         }
@@ -109,20 +113,20 @@ private fun GeneralSettingsTab(settings: com.warestat.android.util.AppSettings, 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Backup, null, tint = Primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Backup automatico", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(strings.autoBackup, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Abilita backup automatico", modifier = Modifier.weight(1f))
+                    Text(strings.autoBackup, modifier = Modifier.weight(1f))
                     Switch(checked = settings.autoBackup, onCheckedChange = { viewModel.updateAutoBackup(it) })
                 }
-                Text("Vai alla sezione Backup per gestire i file e la conservazione.", fontSize = 12.sp, color = Color.Gray)
+                Text(strings.autoBackupDesc, fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
 }
 
 @Composable
-private fun CompanyDataTab(companyData: CompanyDataEntity?, viewModel: SettingsViewModel) {
+private fun CompanyDataTab(companyData: CompanyDataEntity?, viewModel: SettingsViewModel, strings: AppStrings) {
     var companyName by remember(companyData) { mutableStateOf(companyData?.companyName ?: "") }
     var vatNumber by remember(companyData) { mutableStateOf(companyData?.vatNumber ?: "") }
     var taxCode by remember(companyData) { mutableStateOf(companyData?.taxCode ?: "") }
@@ -144,25 +148,25 @@ private fun CompanyDataTab(companyData: CompanyDataEntity?, viewModel: SettingsV
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Business, null, tint = Primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Dati azienda", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(strings.companyTab, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
 
-                OutlinedTextField(value = companyName, onValueChange = { companyName = it; nameError = false }, label = { Text("Ragione sociale *") }, isError = nameError, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = companyName, onValueChange = { companyName = it; nameError = false }, label = { Text(strings.companyNameField) }, isError = nameError, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = vatNumber, onValueChange = { vatNumber = it }, label = { Text("Partita IVA") }, modifier = Modifier.weight(1f), singleLine = true)
-                    OutlinedTextField(value = taxCode, onValueChange = { taxCode = it }, label = { Text("Cod. Fiscale") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = vatNumber, onValueChange = { vatNumber = it }, label = { Text(strings.vatNumber) }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = taxCode, onValueChange = { taxCode = it }, label = { Text(strings.taxCode) }, modifier = Modifier.weight(1f), singleLine = true)
                 }
-                OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text("Indirizzo") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text(strings.address) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = city, onValueChange = { city = it }, label = { Text("Città") }, modifier = Modifier.weight(1f), singleLine = true)
-                    OutlinedTextField(value = postalCode, onValueChange = { postalCode = it }, label = { Text("CAP") }, modifier = Modifier.weight(0.6f), singleLine = true)
-                    OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text("Paese") }, modifier = Modifier.weight(0.8f), singleLine = true)
+                    OutlinedTextField(value = city, onValueChange = { city = it }, label = { Text(strings.city) }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = postalCode, onValueChange = { postalCode = it }, label = { Text(strings.postalCode) }, modifier = Modifier.weight(0.6f), singleLine = true)
+                    OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text(strings.country) }, modifier = Modifier.weight(0.8f), singleLine = true)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Telefono") }, modifier = Modifier.weight(1f), singleLine = true)
-                    OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(strings.phone) }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(strings.email) }, modifier = Modifier.weight(1f), singleLine = true)
                 }
-                OutlinedTextField(value = website, onValueChange = { website = it }, label = { Text("Sito web") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = website, onValueChange = { website = it }, label = { Text(strings.website) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
 
                 Spacer(Modifier.height(4.dp))
                 Button(onClick = {
@@ -178,7 +182,7 @@ private fun CompanyDataTab(companyData: CompanyDataEntity?, viewModel: SettingsV
                 }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Save, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Salva dati azienda")
+                    Text(strings.save)
                 }
             }
         }
@@ -186,7 +190,10 @@ private fun CompanyDataTab(companyData: CompanyDataEntity?, viewModel: SettingsV
 }
 
 @Composable
-private fun AppearanceTab(settings: com.warestat.android.util.AppSettings, viewModel: SettingsViewModel) {
+private fun AppearanceTab(settings: com.warestat.android.util.AppSettings, viewModel: SettingsViewModel, strings: AppStrings) {
+    var showLanguageDropdown by remember { mutableStateOf(false) }
+    val currentLang = languageOptions.find { it.code == settings.selectedLanguage } ?: languageOptions.first()
+
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -196,14 +203,40 @@ private fun AppearanceTab(settings: com.warestat.android.util.AppSettings, viewM
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Palette, null, tint = Primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Tema", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(strings.appearanceTab, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Tema scuro", fontWeight = FontWeight.Medium)
-                        Text("Usa il tema scuro dell'applicazione", fontSize = 12.sp, color = Color.Gray)
+                        Text(strings.darkTheme, fontWeight = FontWeight.Medium)
                     }
                     Switch(checked = settings.darkTheme, onCheckedChange = { viewModel.updateDarkTheme(it) })
+                }
+            }
+        }
+
+        Card(elevation = CardDefaults.cardElevation(1.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Language, null, tint = Primary, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(strings.languageLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                }
+                Box {
+                    OutlinedButton(onClick = { showLanguageDropdown = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${currentLang.flag}  ${currentLang.nativeName}", modifier = Modifier.weight(1f))
+                        Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(18.dp))
+                    }
+                    DropdownMenu(expanded = showLanguageDropdown, onDismissRequest = { showLanguageDropdown = false }) {
+                        languageOptions.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Text("${lang.flag}  ${lang.nativeName}") },
+                                onClick = { viewModel.updateLanguage(lang.code); showLanguageDropdown = false },
+                                leadingIcon = if (lang.code == settings.selectedLanguage) ({
+                                    Icon(Icons.Default.Check, null, tint = Primary, modifier = Modifier.size(16.dp))
+                                }) else null
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -213,11 +246,11 @@ private fun AppearanceTab(settings: com.warestat.android.util.AppSettings, viewM
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Info, null, tint = Secondary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Informazioni app", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(strings.navSettings, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
-                InfoRow("Versione", "1.0.0")
-                InfoRow("Piattaforma", "Android")
-                InfoRow("Database", "SQLite via Room")
+                InfoRow(strings.versionLabel, "1.0.0")
+                InfoRow(strings.platformLabel, "Android")
+                InfoRow(strings.databaseLabel, "SQLite via Room")
             }
         }
     }

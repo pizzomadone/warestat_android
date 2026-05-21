@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.dao.OrderWithCustomer
 import com.warestat.android.data.database.dao.ProductWithSupplier
 import com.warestat.android.data.database.dao.TopProductResult
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.util.DateUtils
 import com.warestat.android.viewmodel.ABCClass
@@ -32,6 +33,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
     onNavigateTo: (String) -> Unit
 ) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LazyColumn(
@@ -46,9 +48,9 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Dashboard", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Primary)
+                Text(strings.dashboardTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Primary)
                 IconButton(onClick = { viewModel.refresh() }) {
-                    Icon(Icons.Default.Refresh, "Aggiorna", tint = Primary)
+                    Icon(Icons.Default.Refresh, strings.refresh, tint = Primary)
                 }
             }
         }
@@ -59,38 +61,38 @@ fun DashboardScreen(
             Spacer(Modifier.height(8.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard(Modifier.weight(1f), "Valore Magazzino", "€ %.2f".format(state.warehouseValue), Icons.Default.Warehouse, Secondary)
-                    KpiCard(Modifier.weight(1f), "Stock Basso", state.lowStockCount.toString(), Icons.Default.Warning, Danger)
+                    KpiCard(Modifier.weight(1f), strings.warehouseValue, "€ %.2f".format(state.warehouseValue), Icons.Default.Warehouse, Secondary)
+                    KpiCard(Modifier.weight(1f), strings.lowStockKpi, state.lowStockCount.toString(), Icons.Default.Warning, Danger)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard(Modifier.weight(1f), "Ordini Pendenti", state.pendingOrderCount.toString(), Icons.Default.ShoppingCart, Warning)
-                    KpiCard(Modifier.weight(1f), "Fatturato Mese", "€ %.2f".format(state.monthRevenue), Icons.Default.TrendingUp, Success)
+                    KpiCard(Modifier.weight(1f), strings.pendingOrdersKpi, state.pendingOrderCount.toString(), Icons.Default.ShoppingCart, Warning)
+                    KpiCard(Modifier.weight(1f), strings.monthRevenue, "€ %.2f".format(state.monthRevenue), Icons.Default.TrendingUp, Success)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KpiCard(Modifier.weight(1f), "Margine Medio", "%.1f%%".format(state.averageMargin), Icons.Default.Percent, Secondary)
-                    KpiCard(Modifier.weight(1f), "Stock Zero", state.zeroStockCount.toString(), Icons.Default.Block, Warning)
+                    KpiCard(Modifier.weight(1f), strings.avgMargin, "%.1f%%".format(state.averageMargin), Icons.Default.Percent, Secondary)
+                    KpiCard(Modifier.weight(1f), strings.zeroStock, state.zeroStockCount.toString(), Icons.Default.Block, Warning)
                 }
             }
         }
 
         // Quick Actions
         item {
-            Text("Azioni Rapide", style = MaterialTheme.typography.titleMedium, color = Primary)
+            Text(strings.quickActions, style = MaterialTheme.typography.titleMedium, color = Primary)
             Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                QuickActionButton(Modifier.weight(1f), "Nuovo Ordine", Icons.Default.Add, Secondary) { onNavigateTo("orders") }
-                QuickActionButton(Modifier.weight(1f), "Nuova Fattura", Icons.Default.Receipt, Success) { onNavigateTo("invoices") }
-                QuickActionButton(Modifier.weight(1f), "Magazzino", Icons.Default.Warehouse, Primary) { onNavigateTo("warehouse") }
+                QuickActionButton(Modifier.weight(1f), strings.newOrder, Icons.Default.Add, Secondary) { onNavigateTo("orders") }
+                QuickActionButton(Modifier.weight(1f), strings.newInvoice, Icons.Default.Receipt, Success) { onNavigateTo("invoices") }
+                QuickActionButton(Modifier.weight(1f), strings.warehouse, Icons.Default.Warehouse, Primary) { onNavigateTo("warehouse") }
             }
         }
 
         // Low Stock Alerts
         if (state.lowStockAlerts.isNotEmpty()) {
             item {
-                SectionHeader("Avvisi Stock Basso", Danger)
+                SectionHeader(strings.lowStockSection, Danger)
             }
             items(state.lowStockAlerts.take(5)) { product ->
                 LowStockAlertItem(product) { onNavigateTo("products") }
@@ -101,16 +103,16 @@ fun DashboardScreen(
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CheckCircle, null, tint = Success)
                         Spacer(Modifier.width(8.dp))
-                        Text("Nessun prodotto sotto stock minimo", color = Success)
+                        Text(strings.noLowStock, color = Success)
                     }
                 }
             }
         }
 
         // Pending Orders
-        item { SectionHeader("Ordini Pendenti", Primary) }
+        item { SectionHeader(strings.pendingOrdersSection, Primary) }
         if (state.pendingOrders.isEmpty()) {
-            item { Text("Nessun ordine pendente", color = Color.Gray, modifier = Modifier.padding(8.dp)) }
+            item { Text(strings.noPendingOrders, color = Color.Gray, modifier = Modifier.padding(8.dp)) }
         } else {
             items(state.pendingOrders.take(8)) { order ->
                 PendingOrderItem(order) { onNavigateTo("orders") }
@@ -118,17 +120,17 @@ fun DashboardScreen(
         }
 
         // Top Products
-        item { SectionHeader("Top 10 Prodotti Più Venduti", Primary) }
+        item { SectionHeader(strings.top10Products, Primary) }
         item {
             if (state.topProducts.isEmpty()) {
-                Text("Nessun dato disponibile", color = Color.Gray, modifier = Modifier.padding(8.dp))
+                Text(strings.noDataAvailable, color = Color.Gray, modifier = Modifier.padding(8.dp))
             } else {
                 TopProductsTable(state.topProducts)
             }
         }
 
         // ABC Analysis
-        item { SectionHeader("Analisi ABC (Pareto)", Primary) }
+        item { SectionHeader(strings.abcAnalysis, Primary) }
         item {
             ABCAnalysisTable(
                 classA = state.abcData.classA,
@@ -191,6 +193,7 @@ private fun SectionHeader(title: String, color: Color) {
 
 @Composable
 private fun LowStockAlertItem(product: ProductWithSupplier, onClick: () -> Unit) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F5)),
@@ -205,7 +208,7 @@ private fun LowStockAlertItem(product: ProductWithSupplier, onClick: () -> Unit)
             Column(Modifier.weight(1f)) {
                 Text("${product.code} - ${product.name}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text(
-                    "Stock: ${product.quantity} / Min: ${product.minimumQuantity} (Mancano: ${product.minimumQuantity - product.quantity})",
+                    "Stock: ${product.quantity} / Min: ${product.minimumQuantity} (${strings.missing}: ${product.minimumQuantity - product.quantity})",
                     fontSize = 11.sp, color = Color(0xFF8B0000)
                 )
             }
@@ -216,6 +219,7 @@ private fun LowStockAlertItem(product: ProductWithSupplier, onClick: () -> Unit)
 
 @Composable
 private fun PendingOrderItem(order: OrderWithCustomer, onClick: () -> Unit) {
+    val strings = LocalStrings.current
     val daysOld = ((System.currentTimeMillis() - order.orderDate) / 86_400_000).toInt()
     val cardColor = if (daysOld > 7) Color(0xFFFFF5F5) else Color(0xFFFFFBF0)
     val borderColor = if (daysOld > 7) Danger else Warning
@@ -227,9 +231,9 @@ private fun PendingOrderItem(order: OrderWithCustomer, onClick: () -> Unit) {
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Ordine #${order.id} - ${order.status}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("${strings.navOrders} #${order.id} - ${order.status}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text(
-                    "${order.customerName ?: "N/A"} - ${DateUtils.formatDate(order.orderDate)} ($daysOld gg fa)",
+                    "${order.customerName ?: "N/A"} - ${DateUtils.formatDate(order.orderDate)} ($daysOld ${strings.daysAgo})",
                     fontSize = 11.sp, color = Color.Gray
                 )
             }
@@ -240,15 +244,16 @@ private fun PendingOrderItem(order: OrderWithCustomer, onClick: () -> Unit) {
 
 @Composable
 private fun TopProductsTable(products: List<TopProductResult>) {
+    val strings = LocalStrings.current
     Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
         Column {
             Row(
                 Modifier.fillMaxWidth().background(Primary).padding(8.dp)
             ) {
                 Text("#", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(30.dp), fontSize = 12.sp)
-                Text("Prodotto", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), fontSize = 12.sp)
-                Text("Qtà", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(50.dp), fontSize = 12.sp)
-                Text("Ricavi", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(80.dp), fontSize = 12.sp)
+                Text(strings.productCol, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), fontSize = 12.sp)
+                Text(strings.qtyCol, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(50.dp), fontSize = 12.sp)
+                Text(strings.revenueCol, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(80.dp), fontSize = 12.sp)
             }
             products.forEachIndexed { index, product ->
                 val bg = if (index % 2 == 0) Color.White else LightGray
@@ -268,10 +273,11 @@ private fun TopProductsTable(products: List<TopProductResult>) {
 
 @Composable
 private fun ABCAnalysisTable(classA: ABCClass, classB: ABCClass, classC: ABCClass, totalProducts: Int) {
+    val strings = LocalStrings.current
     Card(Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
         Column {
             Row(Modifier.fillMaxWidth().background(Primary).padding(8.dp)) {
-                listOf("Classe", "# Prodotti", "% Prodotti", "Ricavi Totali", "% Ricavi").forEach { col ->
+                listOf(strings.classCol, strings.productsCol, strings.pctProductsCol, strings.totalRevenueCol, strings.pctRevenueCol).forEach { col ->
                     Text(col, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), fontSize = 11.sp)
                 }
             }

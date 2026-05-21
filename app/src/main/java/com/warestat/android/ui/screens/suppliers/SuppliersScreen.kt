@@ -22,6 +22,7 @@ import com.warestat.android.data.database.dao.PriceListWithDetails
 import com.warestat.android.data.database.dao.SupplierOrderItemWithProduct
 import com.warestat.android.data.database.dao.SupplierOrderWithSupplier
 import com.warestat.android.data.database.entity.*
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.util.DateUtils
 import com.warestat.android.viewmodel.SuppliersViewModel
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SuppliersScreen(viewModel: SuppliersViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -36,18 +38,18 @@ fun SuppliersScreen(viewModel: SuppliersViewModel = hiltViewModel()) {
 
     LaunchedEffect(state.successMessage, state.error) {
         state.successMessage?.let { scope.launch { snackbarHostState.showSnackbar(it) }; viewModel.clearMessages() }
-        state.error?.let { scope.launch { snackbarHostState.showSnackbar("Errore: $it") }; viewModel.clearMessages() }
+        state.error?.let { scope.launch { snackbarHostState.showSnackbar("${strings.error}$it") }; viewModel.clearMessages() }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(top = 16.dp, start = 16.dp, end = 16.dp)) {
-            Text("Fornitori", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(strings.suppliersTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
 
             TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Fornitori") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Ordini") })
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Listini") })
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(strings.suppliersTitle) })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(strings.ordersTab) })
+                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text(strings.priceListTab) })
             }
             Spacer(Modifier.height(8.dp))
 
@@ -66,6 +68,7 @@ private fun SupplierListTab(
     searchQuery: String,
     viewModel: SuppliersViewModel
 ) {
+    val strings = LocalStrings.current
     var showDialog by remember { mutableStateOf(false) }
     var editingSupplier by remember { mutableStateOf<SupplierEntity?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<SupplierEntity?>(null) }
@@ -73,14 +76,14 @@ private fun SupplierListTab(
     Column {
         OutlinedTextField(
             value = searchQuery, onValueChange = viewModel::setSearchQuery,
-            placeholder = { Text("Cerca fornitori...") }, leadingIcon = { Icon(Icons.Default.Search, null) },
+            placeholder = { Text(strings.searchSuppliers) }, leadingIcon = { Icon(Icons.Default.Search, null) },
             modifier = Modifier.fillMaxWidth(), singleLine = true
         )
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("${suppliers.size} fornitori", style = MaterialTheme.typography.bodyMedium)
+            Text("${suppliers.size} ${strings.suppliersTitle.lowercase()}", style = MaterialTheme.typography.bodyMedium)
             FloatingActionButton(onClick = { editingSupplier = null; showDialog = true }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.Add, "Nuovo fornitore")
+                Icon(Icons.Default.Add, strings.newSupplier)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -96,33 +99,35 @@ private fun SupplierListTab(
     }
     showDeleteConfirm?.let { supplier ->
         AlertDialog(onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Elimina fornitore") }, text = { Text("Eliminare ${supplier.companyName}?") },
-            confirmButton = { TextButton(onClick = { viewModel.deleteSupplier(supplier); showDeleteConfirm = null }) { Text("Elimina", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Annulla") } }
+            title = { Text(strings.deleteSupplierTitle) }, text = { Text("${strings.delete} ${supplier.companyName}?") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteSupplier(supplier); showDeleteConfirm = null }) { Text(strings.delete, color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(strings.cancel) } }
         )
     }
 }
 
 @Composable
 private fun SupplierCard(supplier: SupplierEntity, onEdit: (SupplierEntity) -> Unit, onDelete: (SupplierEntity) -> Unit) {
+    val strings = LocalStrings.current
     Card(modifier = Modifier.fillMaxWidth().clickable { onEdit(supplier) }, elevation = CardDefaults.cardElevation(1.dp)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.LocalShipping, null, tint = Primary, modifier = Modifier.size(36.dp))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(supplier.companyName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                if (supplier.vatNumber.isNotEmpty()) Text("P.IVA: ${supplier.vatNumber}", fontSize = 11.sp, color = Color.Gray)
+                if (supplier.vatNumber.isNotEmpty()) Text("${strings.vatNumber}: ${supplier.vatNumber}", fontSize = 11.sp, color = Color.Gray)
                 if (supplier.email.isNotEmpty()) Text(supplier.email, fontSize = 12.sp)
                 if (supplier.phone.isNotEmpty()) Text(supplier.phone, fontSize = 12.sp)
             }
-            IconButton(onClick = { onEdit(supplier) }) { Icon(Icons.Default.Edit, "Modifica", modifier = Modifier.size(20.dp)) }
-            IconButton(onClick = { onDelete(supplier) }) { Icon(Icons.Default.Delete, "Elimina", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onEdit(supplier) }) { Icon(Icons.Default.Edit, strings.edit, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onDelete(supplier) }) { Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
         }
     }
 }
 
 @Composable
 private fun SupplierDialog(supplier: SupplierEntity?, onDismiss: () -> Unit, onSave: (SupplierEntity) -> Unit) {
+    val strings = LocalStrings.current
     var companyName by remember { mutableStateOf(supplier?.companyName ?: "") }
     var vatNumber by remember { mutableStateOf(supplier?.vatNumber ?: "") }
     var taxCode by remember { mutableStateOf(supplier?.taxCode ?: "") }
@@ -135,26 +140,26 @@ private fun SupplierDialog(supplier: SupplierEntity?, onDismiss: () -> Unit, onS
     var nameError by remember { mutableStateOf(false) }
 
     AlertDialog(onDismissRequest = onDismiss,
-        title = { Text(if (supplier == null) "Nuovo fornitore" else "Modifica fornitore") },
+        title = { Text(if (supplier == null) strings.newSupplier else strings.editSupplier) },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { OutlinedTextField(value = companyName, onValueChange = { companyName = it; nameError = false }, label = { Text("Ragione sociale *") }, isError = nameError, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = companyName, onValueChange = { companyName = it; nameError = false }, label = { Text(strings.companyNameField) }, isError = nameError, modifier = Modifier.fillMaxWidth(), singleLine = true) }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = vatNumber, onValueChange = { vatNumber = it }, label = { Text("P.IVA") }, modifier = Modifier.weight(1f), singleLine = true)
-                        OutlinedTextField(value = taxCode, onValueChange = { taxCode = it }, label = { Text("C.F.") }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = vatNumber, onValueChange = { vatNumber = it }, label = { Text(strings.vatNumber) }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = taxCode, onValueChange = { taxCode = it }, label = { Text(strings.taxCode) }, modifier = Modifier.weight(1f), singleLine = true)
                     }
                 }
-                item { OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text("Indirizzo") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text(strings.address) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Telefono") }, modifier = Modifier.weight(1f), singleLine = true)
-                        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(strings.phone) }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(strings.email) }, modifier = Modifier.weight(1f), singleLine = true)
                     }
                 }
-                item { OutlinedTextField(value = certEmail, onValueChange = { certEmail = it }, label = { Text("PEC") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
-                item { OutlinedTextField(value = website, onValueChange = { website = it }, label = { Text("Sito web") }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
-                item { OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth(), maxLines = 3) }
+                item { OutlinedTextField(value = certEmail, onValueChange = { certEmail = it }, label = { Text(strings.pec) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = website, onValueChange = { website = it }, label = { Text(strings.website) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+                item { OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(strings.notes) }, modifier = Modifier.fillMaxWidth(), maxLines = 3) }
             }
         },
         confirmButton = {
@@ -163,9 +168,9 @@ private fun SupplierDialog(supplier: SupplierEntity?, onDismiss: () -> Unit, onS
                 if (!nameError) onSave(SupplierEntity(id = supplier?.id ?: 0, companyName = companyName.trim(), vatNumber = vatNumber.trim(),
                     taxCode = taxCode.trim(), address = address.trim(), phone = phone.trim(), email = email.trim(),
                     certifiedEmail = certEmail.trim(), website = website.trim(), notes = notes.trim()))
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }
 
@@ -176,15 +181,16 @@ private fun SupplierOrdersTab(
     products: List<com.warestat.android.data.database.dao.ProductWithSupplier>,
     viewModel: SuppliersViewModel
 ) {
+    val strings = LocalStrings.current
     var showDialog by remember { mutableStateOf(false) }
     var editingOrder by remember { mutableStateOf<SupplierOrderWithSupplier?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<SupplierOrderWithSupplier?>(null) }
 
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("${orders.size} ordini fornitori", style = MaterialTheme.typography.bodyMedium)
+            Text("${orders.size} ${strings.ordersTab.lowercase()}", style = MaterialTheme.typography.bodyMedium)
             FloatingActionButton(onClick = { editingOrder = null; showDialog = true }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.Add, "Nuovo ordine")
+                Icon(Icons.Default.Add, strings.newSupplierOrder)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -203,15 +209,16 @@ private fun SupplierOrdersTab(
     }
     showDeleteConfirm?.let { order ->
         AlertDialog(onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Elimina ordine") }, text = { Text("Eliminare ordine ${order.number}?") },
-            confirmButton = { TextButton(onClick = { viewModel.deleteSupplierOrder(order); showDeleteConfirm = null }) { Text("Elimina", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Annulla") } }
+            title = { Text(strings.deleteSupplierOrderTitle) }, text = { Text("${strings.delete} ${order.number}?") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteSupplierOrder(order); showDeleteConfirm = null }) { Text(strings.delete, color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(strings.cancel) } }
         )
     }
 }
 
 @Composable
 private fun SupplierOrderCard(order: SupplierOrderWithSupplier, onEdit: (SupplierOrderWithSupplier) -> Unit, onDelete: (SupplierOrderWithSupplier) -> Unit) {
+    val strings = LocalStrings.current
     val statusColor = when (order.status) {
         "Sent" -> Secondary; "Received" -> Success; "Cancelled" -> Color.Gray; else -> Warning
     }
@@ -226,8 +233,8 @@ private fun SupplierOrderCard(order: SupplierOrderWithSupplier, onEdit: (Supplie
                 Text(order.supplierName, fontSize = 12.sp, color = Color.Gray)
                 Text("${DateUtils.formatDate(order.orderDate)} — € %.2f".format(order.total), fontSize = 12.sp)
             }
-            IconButton(onClick = { onEdit(order) }) { Icon(Icons.Default.Edit, "Modifica", modifier = Modifier.size(20.dp)) }
-            IconButton(onClick = { onDelete(order) }) { Icon(Icons.Default.Delete, "Elimina", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onEdit(order) }) { Icon(Icons.Default.Edit, strings.edit, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onDelete(order) }) { Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
         }
     }
 }
@@ -242,6 +249,7 @@ private fun SupplierOrderDialog(
     onDismiss: () -> Unit,
     onSave: (SupplierOrderEntity, List<SupplierOrderItemEntity>) -> Unit
 ) {
+    val strings = LocalStrings.current
     var selectedSupplierId by remember { mutableStateOf(order?.supplierId) }
     var number by remember { mutableStateOf(order?.number ?: "") }
     var status by remember { mutableStateOf(order?.status ?: "Draft") }
@@ -262,13 +270,13 @@ private fun SupplierOrderDialog(
     val total = orderItems.sumOf { it.quantity * (it.unitPrice.toDoubleOrNull() ?: 0.0) }
 
     AlertDialog(onDismissRequest = onDismiss,
-        title = { Text(if (order == null) "Nuovo ordine fornitore" else "Modifica ordine ${order.number}") },
+        title = { Text(if (order == null) strings.newSupplierOrder else "${strings.editSupplierOrder}${order.number}") },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     ExposedDropdownMenuBox(expanded = showSupplierDropdown, onExpandedChange = { showSupplierDropdown = it }) {
-                        OutlinedTextField(value = suppliers.find { it.id == selectedSupplierId }?.companyName ?: "Seleziona fornitore *",
-                            onValueChange = {}, readOnly = true, label = { Text("Fornitore *") }, isError = supplierError,
+                        OutlinedTextField(value = suppliers.find { it.id == selectedSupplierId }?.companyName ?: strings.selectSupplierRequired,
+                            onValueChange = {}, readOnly = true, label = { Text(strings.supplier) }, isError = supplierError,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showSupplierDropdown) },
                             modifier = Modifier.fillMaxWidth().menuAnchor())
                         ExposedDropdownMenu(expanded = showSupplierDropdown, onDismissRequest = { showSupplierDropdown = false }) {
@@ -278,9 +286,9 @@ private fun SupplierOrderDialog(
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = number, onValueChange = { number = it; numberError = false }, label = { Text("Numero *") }, isError = numberError, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = number, onValueChange = { number = it; numberError = false }, label = { Text(strings.numberRequired) }, isError = numberError, modifier = Modifier.weight(1f), singleLine = true)
                         ExposedDropdownMenuBox(expanded = showStatusDropdown, onExpandedChange = { showStatusDropdown = it }, modifier = Modifier.weight(1f)) {
-                            OutlinedTextField(value = status, onValueChange = {}, readOnly = true, label = { Text("Stato") },
+                            OutlinedTextField(value = status, onValueChange = {}, readOnly = true, label = { Text(strings.status) },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showStatusDropdown) }, modifier = Modifier.fillMaxWidth().menuAnchor(), singleLine = true)
                             ExposedDropdownMenu(expanded = showStatusDropdown, onDismissRequest = { showStatusDropdown = false }) {
                                 listOf("Draft", "Sent", "Received", "Cancelled").forEach { s -> DropdownMenuItem(text = { Text(s) }, onClick = { status = s; showStatusDropdown = false }) }
@@ -288,7 +296,7 @@ private fun SupplierOrderDialog(
                         }
                     }
                 }
-                item { Text("Articoli", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold) }
+                item { Text(strings.addItem, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold) }
                 items(orderItems.size) { idx ->
                     SupplierItemRow(item = orderItems[idx], products = products,
                         onUpdate = { updated -> orderItems = orderItems.toMutableList().also { it[idx] = updated } },
@@ -296,11 +304,11 @@ private fun SupplierOrderDialog(
                 }
                 item {
                     OutlinedButton(onClick = { orderItems = orderItems + SupplierItemData() }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Aggiungi articolo")
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text(strings.addItem)
                     }
                 }
-                item { Text("Totale: € %.2f".format(total), fontWeight = FontWeight.Bold, color = Success) }
-                item { OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth(), maxLines = 3) }
+                item { Text("${strings.total}: € %.2f".format(total), fontWeight = FontWeight.Bold, color = Success) }
+                item { OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(strings.notes) }, modifier = Modifier.fillMaxWidth(), maxLines = 3) }
             }
         },
         confirmButton = {
@@ -315,9 +323,9 @@ private fun SupplierOrderDialog(
                     }
                     onSave(entity, items)
                 }
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }
 
@@ -331,11 +339,12 @@ private fun SupplierItemRow(
     onUpdate: (SupplierItemData) -> Unit,
     onRemove: () -> Unit
 ) {
+    val strings = LocalStrings.current
     var showDropdown by remember { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ExposedDropdownMenuBox(expanded = showDropdown, onExpandedChange = { showDropdown = it }) {
-                OutlinedTextField(value = if (item.productId > 0) item.productName else "Seleziona prodotto", onValueChange = {}, readOnly = true, label = { Text("Prodotto") },
+                OutlinedTextField(value = if (item.productId > 0) item.productName else strings.selectProduct, onValueChange = {}, readOnly = true, label = { Text(strings.product) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showDropdown) }, modifier = Modifier.fillMaxWidth().menuAnchor(), singleLine = true)
                 ExposedDropdownMenu(expanded = showDropdown, onDismissRequest = { showDropdown = false }) {
                     products.forEach { p -> DropdownMenuItem(text = { Text("${p.code} - ${p.name}") }, onClick = { onUpdate(item.copy(productId = p.id, productName = p.name)); showDropdown = false }) }
@@ -343,11 +352,11 @@ private fun SupplierItemRow(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(value = item.quantity.toString(), onValueChange = { onUpdate(item.copy(quantity = it.toIntOrNull() ?: 1)) },
-                    label = { Text("Qtà") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                    label = { Text(strings.qty) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 OutlinedTextField(value = item.unitPrice, onValueChange = { onUpdate(item.copy(unitPrice = it)) },
-                    label = { Text("Prezzo") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                    label = { Text(strings.price) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                 Text("€ %.2f".format(item.quantity * (item.unitPrice.toDoubleOrNull() ?: 0.0)), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                IconButton(onClick = onRemove, modifier = Modifier.size(36.dp)) { Icon(Icons.Default.Delete, "Rimuovi", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) }
+                IconButton(onClick = onRemove, modifier = Modifier.size(36.dp)) { Icon(Icons.Default.Delete, strings.remove, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) }
             }
         }
     }
@@ -360,15 +369,16 @@ private fun PriceListTab(
     products: List<com.warestat.android.data.database.dao.ProductWithSupplier>,
     viewModel: SuppliersViewModel
 ) {
+    val strings = LocalStrings.current
     var showDialog by remember { mutableStateOf(false) }
     var editingPriceList by remember { mutableStateOf<PriceListWithDetails?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<SupplierPriceListEntity?>(null) }
 
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("${priceLists.size} prezzi", style = MaterialTheme.typography.bodyMedium)
+            Text("${priceLists.size} ${strings.priceListTab.lowercase()}", style = MaterialTheme.typography.bodyMedium)
             FloatingActionButton(onClick = { editingPriceList = null; showDialog = true }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.Add, "Nuovo listino")
+                Icon(Icons.Default.Add, strings.newPriceListEntry)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -385,28 +395,29 @@ private fun PriceListTab(
     }
     showDeleteConfirm?.let { pl ->
         AlertDialog(onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Elimina listino") }, text = { Text("Eliminare questa voce listino?") },
-            confirmButton = { TextButton(onClick = { viewModel.deletePriceList(pl); showDeleteConfirm = null }) { Text("Elimina", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Annulla") } }
+            title = { Text(strings.deletePriceListTitle) }, text = { Text("${strings.delete}?") },
+            confirmButton = { TextButton(onClick = { viewModel.deletePriceList(pl); showDeleteConfirm = null }) { Text(strings.delete, color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(strings.cancel) } }
         )
     }
 }
 
 @Composable
 private fun PriceListCard(pl: PriceListWithDetails, onEdit: (PriceListWithDetails) -> Unit, onDelete: (PriceListWithDetails) -> Unit) {
+    val strings = LocalStrings.current
     Card(modifier = Modifier.fillMaxWidth().clickable { onEdit(pl) }, elevation = CardDefaults.cardElevation(1.dp)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(pl.productName ?: "Prodotto non trovato", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text("Fornitore: ${pl.supplierName}", fontSize = 11.sp, color = Color.Gray)
+                Text(pl.productName ?: strings.product, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("${strings.supplier}: ${pl.supplierName}", fontSize = 11.sp, color = Color.Gray)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("€ %.2f".format(pl.price), fontWeight = FontWeight.SemiBold, color = Success, fontSize = 13.sp)
-                    Text("Min: ${pl.minimumQuantity} pz", fontSize = 11.sp)
-                    if (pl.supplierProductCode.isNotEmpty()) Text("Cod: ${pl.supplierProductCode}", fontSize = 11.sp, color = Color.Gray)
+                    Text("${strings.minQtyLabel}: ${pl.minimumQuantity}", fontSize = 11.sp)
+                    if (pl.supplierProductCode.isNotEmpty()) Text("${strings.supplierProductCode}: ${pl.supplierProductCode}", fontSize = 11.sp, color = Color.Gray)
                 }
             }
-            IconButton(onClick = { onEdit(pl) }) { Icon(Icons.Default.Edit, "Modifica", modifier = Modifier.size(20.dp)) }
-            IconButton(onClick = { onDelete(pl) }) { Icon(Icons.Default.Delete, "Elimina", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onEdit(pl) }) { Icon(Icons.Default.Edit, strings.edit, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onDelete(pl) }) { Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
         }
     }
 }
@@ -420,6 +431,7 @@ private fun PriceListDialog(
     onDismiss: () -> Unit,
     onSave: (SupplierPriceListEntity) -> Unit
 ) {
+    val strings = LocalStrings.current
     var selectedSupplierId by remember { mutableStateOf(priceList?.supplierId) }
     var selectedProductId by remember { mutableStateOf(priceList?.productId) }
     var supplierCode by remember { mutableStateOf(priceList?.supplierProductCode ?: "") }
@@ -432,29 +444,29 @@ private fun PriceListDialog(
     var priceError by remember { mutableStateOf(false) }
 
     AlertDialog(onDismissRequest = onDismiss,
-        title = { Text(if (priceList == null) "Nuovo listino" else "Modifica listino") },
+        title = { Text(if (priceList == null) strings.newPriceListEntry else strings.editPriceListEntry) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ExposedDropdownMenuBox(expanded = showSupplierDropdown, onExpandedChange = { showSupplierDropdown = it }) {
-                    OutlinedTextField(value = suppliers.find { it.id == selectedSupplierId }?.companyName ?: "Seleziona fornitore *",
-                        onValueChange = {}, readOnly = true, label = { Text("Fornitore *") }, isError = supplierError,
+                    OutlinedTextField(value = suppliers.find { it.id == selectedSupplierId }?.companyName ?: strings.selectSupplierRequired,
+                        onValueChange = {}, readOnly = true, label = { Text(strings.supplier) }, isError = supplierError,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showSupplierDropdown) }, modifier = Modifier.fillMaxWidth().menuAnchor())
                     ExposedDropdownMenu(expanded = showSupplierDropdown, onDismissRequest = { showSupplierDropdown = false }) {
                         suppliers.forEach { s -> DropdownMenuItem(text = { Text(s.companyName) }, onClick = { selectedSupplierId = s.id; showSupplierDropdown = false; supplierError = false }) }
                     }
                 }
                 ExposedDropdownMenuBox(expanded = showProductDropdown, onExpandedChange = { showProductDropdown = it }) {
-                    OutlinedTextField(value = products.find { it.id == selectedProductId }?.name ?: "Seleziona prodotto *",
-                        onValueChange = {}, readOnly = true, label = { Text("Prodotto *") }, isError = productError,
+                    OutlinedTextField(value = products.find { it.id == selectedProductId }?.name ?: strings.selectProduct,
+                        onValueChange = {}, readOnly = true, label = { Text(strings.product) }, isError = productError,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showProductDropdown) }, modifier = Modifier.fillMaxWidth().menuAnchor())
                     ExposedDropdownMenu(expanded = showProductDropdown, onDismissRequest = { showProductDropdown = false }) {
                         products.forEach { p -> DropdownMenuItem(text = { Text("${p.code} - ${p.name}") }, onClick = { selectedProductId = p.id; showProductDropdown = false; productError = false }) }
                     }
                 }
-                OutlinedTextField(value = supplierCode, onValueChange = { supplierCode = it }, label = { Text("Codice fornitore") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = supplierCode, onValueChange = { supplierCode = it }, label = { Text(strings.supplierProductCode) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = price, onValueChange = { price = it; priceError = false }, label = { Text("Prezzo *") }, isError = priceError, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                    OutlinedTextField(value = minQty, onValueChange = { minQty = it }, label = { Text("Qtà min") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                    OutlinedTextField(value = price, onValueChange = { price = it; priceError = false }, label = { Text(strings.price) }, isError = priceError, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                    OutlinedTextField(value = minQty, onValueChange = { minQty = it }, label = { Text(strings.minQtyLabel) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 }
             }
         },
@@ -465,8 +477,8 @@ private fun PriceListDialog(
                     onSave(SupplierPriceListEntity(id = priceList?.id ?: 0, supplierId = selectedSupplierId!!, productId = selectedProductId!!,
                         supplierProductCode = supplierCode.trim(), price = price.toDoubleOrNull() ?: 0.0, minimumQuantity = minQty.toIntOrNull() ?: 1))
                 }
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }

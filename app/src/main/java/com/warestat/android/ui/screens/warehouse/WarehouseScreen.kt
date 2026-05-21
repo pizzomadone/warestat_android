@@ -22,6 +22,7 @@ import com.warestat.android.data.database.dao.MovementWithProduct
 import com.warestat.android.data.database.dao.NotificationWithProduct
 import com.warestat.android.data.database.dao.StockStatus
 import com.warestat.android.data.database.entity.*
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.util.DateUtils
 import com.warestat.android.viewmodel.WarehouseViewModel
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun WarehouseScreen(viewModel: WarehouseViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -36,18 +38,18 @@ fun WarehouseScreen(viewModel: WarehouseViewModel = hiltViewModel()) {
 
     LaunchedEffect(state.successMessage, state.error) {
         state.successMessage?.let { scope.launch { snackbarHostState.showSnackbar(it) }; viewModel.clearMessages() }
-        state.error?.let { scope.launch { snackbarHostState.showSnackbar("Errore: $it") }; viewModel.clearMessages() }
+        state.error?.let { scope.launch { snackbarHostState.showSnackbar("${strings.error}$it") }; viewModel.clearMessages() }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(top = 16.dp, start = 16.dp, end = 16.dp)) {
-            Text("Magazzino", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(strings.warehouseTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
 
             TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Stock") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Movimenti") })
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Notifiche") })
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(strings.stockTab) })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(strings.movementsTab) })
+                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text(strings.notificationsTab) })
             }
             Spacer(Modifier.height(8.dp))
 
@@ -67,19 +69,20 @@ private fun StockStatusTab(
     suppliers: List<SupplierEntity>,
     viewModel: WarehouseViewModel
 ) {
+    val strings = LocalStrings.current
     var showMinStockDialog by remember { mutableStateOf<StockStatus?>(null) }
 
     Column {
-        Text("${stockStatus.size} prodotti in magazzino", style = MaterialTheme.typography.bodyMedium)
+        Text("${stockStatus.size} ${strings.productsTitle.lowercase()}", style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(8.dp))
         // Header
         Card(colors = CardDefaults.cardColors(containerColor = Primary)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
-                Text("Prodotto", color = Color.White, modifier = Modifier.weight(1f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(strings.product, color = Color.White, modifier = Modifier.weight(1f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text("Stock", color = Color.White, modifier = Modifier.width(50.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text("Ris.", color = Color.White, modifier = Modifier.width(40.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text("Disp.", color = Color.White, modifier = Modifier.width(45.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text("Min", color = Color.White, modifier = Modifier.width(40.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(strings.reservedCol, color = Color.White, modifier = Modifier.width(40.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(strings.availableCol, color = Color.White, modifier = Modifier.width(45.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(strings.minimumCol, color = Color.White, modifier = Modifier.width(40.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(36.dp))
             }
         }
@@ -102,6 +105,7 @@ private fun StockStatusTab(
 
 @Composable
 private fun StockStatusRow(stock: StockStatus, onClick: (StockStatus) -> Unit) {
+    val strings = LocalStrings.current
     val minQty = stock.minimumQuantity ?: 0
     val statusColor = when {
         stock.physicalStock == 0 -> Danger
@@ -121,7 +125,7 @@ private fun StockStatusRow(stock: StockStatus, onClick: (StockStatus) -> Unit) {
             Text(stock.availableStock.toString(), modifier = Modifier.width(45.dp), fontSize = 12.sp, color = if (stock.availableStock < 0) Danger else Success, fontWeight = FontWeight.SemiBold)
             Text(minQty.toString(), modifier = Modifier.width(40.dp), fontSize = 12.sp, color = Color.Gray)
             IconButton(onClick = { onClick(stock) }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Edit, "Imposta min", modifier = Modifier.size(16.dp), tint = Primary)
+                Icon(Icons.Default.Edit, strings.setMinStock, modifier = Modifier.size(16.dp), tint = Primary)
             }
         }
     }
@@ -135,6 +139,7 @@ private fun MinimumStockDialog(
     onDismiss: () -> Unit,
     onSave: (MinimumStockEntity) -> Unit
 ) {
+    val strings = LocalStrings.current
     var minQty by remember { mutableStateOf("0") }
     var reorderQty by remember { mutableStateOf("0") }
     var leadTime by remember { mutableStateOf("0") }
@@ -150,32 +155,32 @@ private fun MinimumStockDialog(
     }
 
     AlertDialog(onDismissRequest = onDismiss,
-        title = { Text("Stock minimo: ${stock.name}") },
+        title = { Text("${strings.setMinStock}: ${stock.name}") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = minQty, onValueChange = { minQty = it }, label = { Text("Qtà minima") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
-                    OutlinedTextField(value = reorderQty, onValueChange = { reorderQty = it }, label = { Text("Qtà riordino") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                    OutlinedTextField(value = minQty, onValueChange = { minQty = it }, label = { Text(strings.minQtyField) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                    OutlinedTextField(value = reorderQty, onValueChange = { reorderQty = it }, label = { Text(strings.reorderQtyField) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 }
-                OutlinedTextField(value = leadTime, onValueChange = { leadTime = it }, label = { Text("Lead time (giorni)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                OutlinedTextField(value = leadTime, onValueChange = { leadTime = it }, label = { Text(strings.leadTimeDays) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 @OptIn(ExperimentalMaterial3Api::class)
                 ExposedDropdownMenuBox(expanded = showSupplierDropdown, onExpandedChange = { showSupplierDropdown = it }) {
-                    OutlinedTextField(value = suppliers.find { it.id == preferredSupplierId }?.companyName ?: "Nessun fornitore preferito", onValueChange = {}, readOnly = true, label = { Text("Fornitore preferito") },
+                    OutlinedTextField(value = suppliers.find { it.id == preferredSupplierId }?.companyName ?: strings.noPreferredSupplier, onValueChange = {}, readOnly = true, label = { Text(strings.preferredSupplier) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showSupplierDropdown) }, modifier = Modifier.fillMaxWidth().menuAnchor())
                     ExposedDropdownMenu(expanded = showSupplierDropdown, onDismissRequest = { showSupplierDropdown = false }) {
-                        DropdownMenuItem(text = { Text("Nessuno") }, onClick = { preferredSupplierId = null; showSupplierDropdown = false })
+                        DropdownMenuItem(text = { Text(strings.none) }, onClick = { preferredSupplierId = null; showSupplierDropdown = false })
                         suppliers.forEach { s -> DropdownMenuItem(text = { Text(s.companyName) }, onClick = { preferredSupplierId = s.id; showSupplierDropdown = false }) }
                     }
                 }
-                OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(strings.notes) }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
             }
         },
         confirmButton = {
             Button(onClick = {
                 onSave(MinimumStockEntity(productId = stock.productId, minimumQuantity = minQty.toIntOrNull() ?: 0, reorderQuantity = reorderQty.toIntOrNull() ?: 0, leadTimeDays = leadTime.toIntOrNull() ?: 0, preferredSupplierId = preferredSupplierId, notes = notes.trim()))
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }
 
@@ -186,17 +191,18 @@ private fun MovementsTab(
     products: List<com.warestat.android.data.database.dao.ProductWithSupplier>,
     viewModel: WarehouseViewModel
 ) {
+    val strings = LocalStrings.current
     var showDialog by remember { mutableStateOf(false) }
     var editingMovement by remember { mutableStateOf<MovementWithProduct?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<MovementWithProduct?>(null) }
 
     Column {
-        OutlinedTextField(value = searchQuery, onValueChange = viewModel::setSearchQuery, placeholder = { Text("Cerca movimenti...") }, leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        OutlinedTextField(value = searchQuery, onValueChange = viewModel::setSearchQuery, placeholder = { Text(strings.searchMovements) }, leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("${movements.size} movimenti", style = MaterialTheme.typography.bodyMedium)
+            Text("${movements.size} ${strings.movementsTab.lowercase()}", style = MaterialTheme.typography.bodyMedium)
             FloatingActionButton(onClick = { editingMovement = null; showDialog = true }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.Add, "Nuovo movimento")
+                Icon(Icons.Default.Add, strings.newMovement)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -212,15 +218,16 @@ private fun MovementsTab(
     }
     showDeleteConfirm?.let { movement ->
         AlertDialog(onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Elimina movimento") }, text = { Text("Eliminare il movimento per ${movement.productName}? Lo stock verrà ripristinato.") },
-            confirmButton = { TextButton(onClick = { viewModel.deleteMovement(movement); showDeleteConfirm = null }) { Text("Elimina", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Annulla") } }
+            title = { Text(strings.deleteMovementTitle) }, text = { Text("${strings.delete} ${movement.productName}?") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteMovement(movement); showDeleteConfirm = null }) { Text(strings.delete, color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(strings.cancel) } }
         )
     }
 }
 
 @Composable
 private fun MovementCard(movement: MovementWithProduct, onEdit: (MovementWithProduct) -> Unit, onDelete: (MovementWithProduct) -> Unit) {
+    val strings = LocalStrings.current
     val isInward = movement.type == "INWARD"
     val typeColor = if (isInward) Success else Warning
     Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(1.dp)) {
@@ -234,10 +241,10 @@ private fun MovementCard(movement: MovementWithProduct, onEdit: (MovementWithPro
                     Text(movement.reason.ifEmpty { movement.type }, fontSize = 12.sp, color = Color.Gray)
                 }
                 Text(DateUtils.formatDate(movement.date), fontSize = 11.sp, color = Color.Gray)
-                if (movement.documentNumber.isNotEmpty()) Text("Doc: ${movement.documentType} ${movement.documentNumber}", fontSize = 11.sp, color = Color.Gray)
+                if (movement.documentNumber.isNotEmpty()) Text("${strings.docType}: ${movement.documentType} ${movement.documentNumber}", fontSize = 11.sp, color = Color.Gray)
             }
-            IconButton(onClick = { onEdit(movement) }) { Icon(Icons.Default.Edit, "Modifica", modifier = Modifier.size(20.dp)) }
-            IconButton(onClick = { onDelete(movement) }) { Icon(Icons.Default.Delete, "Elimina", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onEdit(movement) }) { Icon(Icons.Default.Edit, strings.edit, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onDelete(movement) }) { Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
         }
     }
 }
@@ -250,6 +257,7 @@ private fun MovementDialog(
     onDismiss: () -> Unit,
     onSave: (WarehouseMovementEntity) -> Unit
 ) {
+    val strings = LocalStrings.current
     var selectedProductId by remember { mutableStateOf(movement?.productId) }
     var type by remember { mutableStateOf(movement?.type ?: "INWARD") }
     var quantity by remember { mutableStateOf(movement?.quantity?.toString() ?: "1") }
@@ -262,12 +270,12 @@ private fun MovementDialog(
     var productError by remember { mutableStateOf(false) }
 
     AlertDialog(onDismissRequest = onDismiss,
-        title = { Text(if (movement == null) "Nuovo movimento" else "Modifica movimento") },
+        title = { Text(if (movement == null) strings.newMovement else strings.editMovement) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ExposedDropdownMenuBox(expanded = showProductDropdown, onExpandedChange = { showProductDropdown = it }) {
-                    OutlinedTextField(value = products.find { it.id == selectedProductId }?.let { "${it.code} - ${it.name}" } ?: "Seleziona prodotto *",
-                        onValueChange = {}, readOnly = true, label = { Text("Prodotto *") }, isError = productError,
+                    OutlinedTextField(value = products.find { it.id == selectedProductId }?.let { "${it.code} - ${it.name}" } ?: strings.selectProduct,
+                        onValueChange = {}, readOnly = true, label = { Text(strings.product) }, isError = productError,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showProductDropdown) }, modifier = Modifier.fillMaxWidth().menuAnchor())
                     ExposedDropdownMenu(expanded = showProductDropdown, onDismissRequest = { showProductDropdown = false }) {
                         products.forEach { p -> DropdownMenuItem(text = { Text("${p.code} - ${p.name}") }, onClick = { selectedProductId = p.id; showProductDropdown = false; productError = false }) }
@@ -275,21 +283,21 @@ private fun MovementDialog(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ExposedDropdownMenuBox(expanded = showTypeDropdown, onExpandedChange = { showTypeDropdown = it }, modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(value = if (type == "INWARD") "Entrata" else "Uscita", onValueChange = {}, readOnly = true, label = { Text("Tipo") },
+                        OutlinedTextField(value = if (type == "INWARD") strings.moveIn else strings.moveOut, onValueChange = {}, readOnly = true, label = { Text(strings.moveType) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showTypeDropdown) }, modifier = Modifier.fillMaxWidth().menuAnchor(), singleLine = true)
                         ExposedDropdownMenu(expanded = showTypeDropdown, onDismissRequest = { showTypeDropdown = false }) {
-                            DropdownMenuItem(text = { Text("Entrata") }, onClick = { type = "INWARD"; showTypeDropdown = false })
-                            DropdownMenuItem(text = { Text("Uscita") }, onClick = { type = "OUTWARD"; showTypeDropdown = false })
+                            DropdownMenuItem(text = { Text(strings.moveIn) }, onClick = { type = "INWARD"; showTypeDropdown = false })
+                            DropdownMenuItem(text = { Text(strings.moveOut) }, onClick = { type = "OUTWARD"; showTypeDropdown = false })
                         }
                     }
-                    OutlinedTextField(value = quantity, onValueChange = { quantity = it }, label = { Text("Quantità") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                    OutlinedTextField(value = quantity, onValueChange = { quantity = it }, label = { Text(strings.quantity) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 }
-                OutlinedTextField(value = reason, onValueChange = { reason = it }, label = { Text("Causale") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = reason, onValueChange = { reason = it }, label = { Text(strings.reason) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = docType, onValueChange = { docType = it }, label = { Text("Tipo doc.") }, modifier = Modifier.weight(1f), singleLine = true)
-                    OutlinedTextField(value = docNumber, onValueChange = { docNumber = it }, label = { Text("Num. doc.") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = docType, onValueChange = { docType = it }, label = { Text(strings.docType) }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = docNumber, onValueChange = { docNumber = it }, label = { Text(strings.docNumber) }, modifier = Modifier.weight(1f), singleLine = true)
                 }
-                OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(strings.notes) }, modifier = Modifier.fillMaxWidth(), maxLines = 2)
             }
         },
         confirmButton = {
@@ -299,29 +307,30 @@ private fun MovementDialog(
                     onSave(WarehouseMovementEntity(id = movement?.id ?: 0, productId = selectedProductId!!, date = movement?.date ?: System.currentTimeMillis(),
                         type = type, quantity = quantity.toIntOrNull() ?: 1, reason = reason.trim(), documentNumber = docNumber.trim(), documentType = docType.trim(), notes = notes.trim()))
                 }
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }
 
 @Composable
 private fun NotificationsTab(notifications: List<NotificationWithProduct>, viewModel: WarehouseViewModel) {
+    val strings = LocalStrings.current
     val selectedIds = remember { mutableStateListOf<Int>() }
 
     Column {
         if (notifications.isNotEmpty()) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { viewModel.markNotifications(notifications.map { it.id }, "READ"); selectedIds.clear() }, modifier = Modifier.weight(1f)) {
-                    Text("Segna lette", fontSize = 12.sp)
+                    Text(strings.markRead, fontSize = 12.sp)
                 }
                 Button(onClick = { viewModel.markNotifications(notifications.map { it.id }, "HANDLED"); selectedIds.clear() }, modifier = Modifier.weight(1f)) {
-                    Text("Segna gestite", fontSize = 12.sp)
+                    Text(strings.markHandled, fontSize = 12.sp)
                 }
             }
             Spacer(Modifier.height(8.dp))
         }
-        Text("${notifications.size} notifiche attive", style = MaterialTheme.typography.bodyMedium)
+        Text("${notifications.size} ${strings.notificationsTab.lowercase()}", style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(8.dp))
 
         if (notifications.isEmpty()) {
@@ -329,7 +338,7 @@ private fun NotificationsTab(notifications: List<NotificationWithProduct>, viewM
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CheckCircle, null, tint = Success)
                     Spacer(Modifier.width(8.dp))
-                    Text("Nessuna notifica attiva", color = Success)
+                    Text(strings.noActiveNotifications, color = Success)
                 }
             }
         } else {
