@@ -179,18 +179,18 @@ interface WarehouseDao {
 
 data class ReservationResult(
     val id: Int,
-    val reservedQuantity: Int,
+    @ColumnInfo(name = "reserved_quantity") val reservedQuantity: Int,
     val status: String
 )
 
 data class ReservationQuantity(
-    val productId: Int,
-    val reservedQuantity: Int
+    @ColumnInfo(name = "product_id") val productId: Int,
+    @ColumnInfo(name = "reserved_quantity") val reservedQuantity: Int
 )
 
 data class LowStockProduct(
     val productId: Int,
     val quantity: Int,
-    val minimumQuantity: Int,
-    val reorderQuantity: Int
+    @ColumnInfo(name = "minimum_quantity") val minimumQuantity: Int,
+    @ColumnInfo(name = "reorder_quantity") val reorderQuantity: Int
 )
