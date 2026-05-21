@@ -11,18 +11,18 @@ data class ProductWithSupplier(
     val description: String,
     val price: Double,
     val quantity: Int,
-    val reservedQuantity: Int,
+    @ColumnInfo(name = "reserved_quantity") val reservedQuantity: Int,
     val category: String,
-    val alternativeSku: String,
+    @ColumnInfo(name = "alternative_sku") val alternativeSku: String,
     val weight: Double,
-    val unitOfMeasure: String,
-    val minimumQuantity: Int,
-    val acquisitionCost: Double,
+    @ColumnInfo(name = "unit_of_measure") val unitOfMeasure: String,
+    @ColumnInfo(name = "minimum_quantity") val minimumQuantity: Int,
+    @ColumnInfo(name = "acquisition_cost") val acquisitionCost: Double,
     val active: Boolean,
-    val supplierId: Int?,
+    @ColumnInfo(name = "supplier_id") val supplierId: Int?,
     val supplierName: String?,
-    val warehousePosition: String,
-    val vatRate: Double
+    @ColumnInfo(name = "warehouse_position") val warehousePosition: String,
+    @ColumnInfo(name = "vat_rate") val vatRate: Double
 )
 
 @Dao

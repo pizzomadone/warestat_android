@@ -34,7 +34,7 @@ interface OrderDao {
                (c.first_name || ' ' || c.last_name) as customerName,
                o.order_date as orderDate, o.status, o.total,
                o.payment_status as paymentStatus, o.paid_amount as paidAmount,
-               COALESCE(o.notes, '') as notes
+               '' as notes
         FROM orders o
         LEFT JOIN customers c ON o.customer_id = c.id
         ORDER BY o.order_date DESC
@@ -46,7 +46,7 @@ interface OrderDao {
                (c.first_name || ' ' || c.last_name) as customerName,
                o.order_date as orderDate, o.status, o.total,
                o.payment_status as paymentStatus, o.paid_amount as paidAmount,
-               COALESCE(o.notes, '') as notes
+               '' as notes
         FROM orders o
         LEFT JOIN customers c ON o.customer_id = c.id
         WHERE o.status != 'Completed' AND o.status != 'Cancelled'
@@ -72,7 +72,7 @@ interface OrderDao {
                (c.first_name || ' ' || c.last_name) as customerName,
                o.order_date as orderDate, o.status, o.total,
                o.payment_status as paymentStatus, o.paid_amount as paidAmount,
-               COALESCE(o.notes, '') as notes
+               '' as notes
         FROM orders o
         LEFT JOIN customers c ON o.customer_id = c.id
         WHERE o.order_date BETWEEN :startDate AND :endDate
