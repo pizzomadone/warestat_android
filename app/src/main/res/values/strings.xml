@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WareStat</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_customers">Clienti</string>
+    <string name="nav_products">Prodotti</string>
+    <string name="nav_orders">Ordini</string>
+    <string name="nav_invoices">Fatture</string>
+    <string name="nav_suppliers">Fornitori</string>
+    <string name="nav_warehouse">Magazzino</string>
+    <string name="nav_reports">Report</string>
+    <string name="nav_backup">Backup</string>
+    <string name="nav_settings">Impostazioni</string>
+    <string name="action_save">Salva</string>
+    <string name="action_cancel">Annulla</string>
+    <string name="action_delete">Elimina</string>
+    <string name="action_edit">Modifica</string>
+    <string name="error_required_field">Campo obbligatorio</string>
+    <string name="error_invalid_price">Prezzo non valido</string>
+</resources>

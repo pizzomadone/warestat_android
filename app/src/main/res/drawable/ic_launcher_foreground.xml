@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Warehouse icon representation -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,20 L20,42 L20,88 L88,88 L88,42 Z"/>
+    <path
+        android:fillColor="#2C3E50"
+        android:pathData="M54,26 L26,45 L26,84 L82,84 L82,45 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,84 L42,64 L66,64 L66,84 Z"/>
+    <path
+        android:fillColor="#3498DB"
+        android:pathData="M34,55 L46,55 L46,63 L34,63 Z"/>
+    <path
+        android:fillColor="#3498DB"
+        android:pathData="M62,55 L74,55 L74,63 L62,63 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,20 L20,42 L26,45 L54,26 L82,45 L88,42 Z"/>
+</vector>
