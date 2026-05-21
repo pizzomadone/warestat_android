@@ -18,12 +18,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
+import com.warestat.android.i18n.*
 import com.warestat.android.ui.navigation.*
 import com.warestat.android.ui.screens.backup.BackupScreen
 import com.warestat.android.ui.screens.customers.CustomersScreen
 import com.warestat.android.ui.screens.dashboard.DashboardScreen
 import com.warestat.android.ui.screens.eula.EulaScreen
 import com.warestat.android.ui.screens.invoices.InvoicesScreen
+import com.warestat.android.ui.screens.language.LanguageSelectionScreen
 import com.warestat.android.ui.screens.orders.OrdersScreen
 import com.warestat.android.ui.screens.products.ProductsScreen
 import com.warestat.android.ui.screens.reports.AdvancedStatsScreen
@@ -51,17 +53,25 @@ class MainActivity : ComponentActivity() {
             val settings by settingsManager.settingsFlow.collectAsStateWithLifecycle(
                 initialValue = com.warestat.android.util.AppSettings()
             )
+            val scope = rememberCoroutineScope()
 
             WareStatTheme(darkTheme = settings.darkTheme) {
-                if (!settings.eulaAccepted) {
-                    EulaScreen(onAccept = {
-                        // Mark EULA as accepted in settings
-                        kotlinx.coroutines.MainScope().launch {
-                            settingsManager.markEulaAccepted()
+                CompositionLocalProvider(LocalStrings provides getStrings(settings.selectedLanguage)) {
+                    when {
+                        settings.selectedLanguage.isEmpty() -> {
+                            LanguageSelectionScreen(onLanguageSelected = { code ->
+                                scope.launch { settingsManager.updateLanguage(code) }
+                            })
                         }
-                    })
-                } else {
-                    WareStatApp()
+                        !settings.eulaAccepted -> {
+                            EulaScreen(onAccept = {
+                                scope.launch { settingsManager.markEulaAccepted() }
+                            })
+                        }
+                        else -> {
+                            WareStatApp()
+                        }
+                    }
                 }
             }
         }
@@ -71,6 +81,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WareStatApp() {
+    val strings = LocalStrings.current
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -86,15 +97,28 @@ fun WareStatApp() {
                 Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Column {
                         Text("WareStat", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Primary)
-                        Text("Gestione Aziendale", style = MaterialTheme.typography.bodyMedium)
+                        Text(strings.appSubtitle, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 Divider(Modifier.padding(vertical = 8.dp))
                 // Drawer items
                 drawerItems.forEach { screen ->
+                    val label = when (screen.route) {
+                        Screen.Dashboard.route -> strings.navDashboard
+                        Screen.Customers.route -> strings.navCustomers
+                        Screen.Products.route -> strings.navProducts
+                        Screen.Orders.route -> strings.navOrders
+                        Screen.Invoices.route -> strings.navInvoices
+                        Screen.Suppliers.route -> strings.navSuppliers
+                        Screen.Warehouse.route -> strings.navWarehouse
+                        Screen.Reports.route -> strings.navReports
+                        Screen.Backup.route -> strings.navBackup
+                        Screen.Settings.route -> strings.navSettings
+                        else -> screen.title
+                    }
                     NavigationDrawerItem(
                         icon = { Icon(screen.icon, null) },
-                        label = { Text(screen.title) },
+                        label = { Text(label) },
                         selected = currentRoute == screen.route,
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -116,7 +140,22 @@ fun WareStatApp() {
                 TopAppBar(
                     title = {
                         val screen = drawerItems.find { it.route == currentRoute }
-                        Text(screen?.title ?: "WareStat", fontWeight = FontWeight.SemiBold)
+                        val title = if (screen != null) {
+                            when (screen.route) {
+                                Screen.Dashboard.route -> strings.navDashboard
+                                Screen.Customers.route -> strings.navCustomers
+                                Screen.Products.route -> strings.navProducts
+                                Screen.Orders.route -> strings.navOrders
+                                Screen.Invoices.route -> strings.navInvoices
+                                Screen.Suppliers.route -> strings.navSuppliers
+                                Screen.Warehouse.route -> strings.navWarehouse
+                                Screen.Reports.route -> strings.navReports
+                                Screen.Backup.route -> strings.navBackup
+                                Screen.Settings.route -> strings.navSettings
+                                else -> screen.title
+                            }
+                        } else "WareStat"
+                        Text(title, fontWeight = FontWeight.SemiBold)
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
@@ -131,9 +170,22 @@ fun WareStatApp() {
             bottomBar = {
                 NavigationBar {
                     bottomNavItems.forEach { screen ->
+                        val label = when (screen.route) {
+                            Screen.Dashboard.route -> strings.navDashboard
+                            Screen.Customers.route -> strings.navCustomers
+                            Screen.Products.route -> strings.navProducts
+                            Screen.Orders.route -> strings.navOrders
+                            Screen.Invoices.route -> strings.navInvoices
+                            Screen.Suppliers.route -> strings.navSuppliers
+                            Screen.Warehouse.route -> strings.navWarehouse
+                            Screen.Reports.route -> strings.navReports
+                            Screen.Backup.route -> strings.navBackup
+                            Screen.Settings.route -> strings.navSettings
+                            else -> screen.title
+                        }
                         NavigationBarItem(
                             icon = { Icon(screen.icon, null) },
-                            label = { Text(screen.title, maxLines = 1) },
+                            label = { Text(label, maxLines = 1) },
                             selected = currentRoute == screen.route,
                             onClick = {
                                 navController.navigate(screen.route) {
@@ -178,22 +230,23 @@ fun WareStatApp() {
 
 @Composable
 private fun ReportsScreen(navController: NavHostController) {
+    val strings = LocalStrings.current
     Column(
         Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
     ) {
-        Text("Report", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("Seleziona il tipo di report:", style = MaterialTheme.typography.bodyMedium)
+        Text(strings.reportsTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(strings.selectReportType, style = MaterialTheme.typography.bodyMedium)
 
         ReportCard(
-            title = "Vendite",
-            description = "Analisi ordini con filtro per periodo, statistiche e export CSV/PDF",
+            title = strings.salesReportTitle,
+            description = strings.salesReportDesc,
             icon = Icons.Default.Receipt,
             onClick = { navController.navigate("reports_sales") }
         )
         ReportCard(
-            title = "Statistiche Avanzate",
-            description = "Trend mensili, analisi top prodotti, grafici interattivi",
+            title = strings.advancedStatsTitle,
+            description = strings.advancedStatsDesc,
             icon = Icons.Default.BarChart,
             onClick = { navController.navigate("reports_advanced") }
         )

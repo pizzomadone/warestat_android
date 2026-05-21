@@ -23,24 +23,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.dao.ProductWithSupplier
 import com.warestat.android.data.database.entity.ProductEntity
 import com.warestat.android.data.database.entity.SupplierEntity
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.viewmodel.ProductsViewModel
 
 @Composable
 fun ProductsScreen(viewModel: ProductsViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
     var editingProduct by remember { mutableStateOf<ProductWithSupplier?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<ProductWithSupplier?>(null) }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Prodotti", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(strings.productsTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = viewModel::setSearchQuery,
-            placeholder = { Text("Cerca per nome, codice, SKU...") },
+            placeholder = { Text(strings.searchProducts) },
             leadingIcon = { Icon(Icons.Default.Search, null) },
             trailingIcon = {
                 if (state.searchQuery.isNotEmpty()) IconButton(onClick = { viewModel.setSearchQuery("") }) {
@@ -54,15 +56,15 @@ fun ProductsScreen(viewModel: ProductsViewModel = hiltViewModel()) {
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${state.products.size} prodotti", style = MaterialTheme.typography.bodyMedium)
+                Text("${state.products.size} ${strings.productsTitle.lowercase()}", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.width(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = state.showInactiveProducts, onCheckedChange = viewModel::setShowInactive)
-                    Text("Mostra inattivi", fontSize = 12.sp)
+                    Text(strings.inactiveLabel, fontSize = 12.sp)
                 }
             }
             FloatingActionButton(onClick = { editingProduct = null; showDialog = true }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.Add, "Nuovo prodotto")
+                Icon(Icons.Default.Add, strings.newProduct)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -93,8 +95,8 @@ fun ProductsScreen(viewModel: ProductsViewModel = hiltViewModel()) {
     showDeleteConfirm?.let { product ->
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Elimina prodotto") },
-            text = { Text("Eliminare ${product.name} (${product.code})?") },
+            title = { Text(strings.deleteProductTitle) },
+            text = { Text("${strings.delete} ${product.name} (${product.code})?") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteProduct(ProductEntity(
@@ -102,15 +104,16 @@ fun ProductsScreen(viewModel: ProductsViewModel = hiltViewModel()) {
                         description = product.description, price = product.price, quantity = product.quantity
                     ))
                     showDeleteConfirm = null
-                }) { Text("Elimina", color = MaterialTheme.colorScheme.error) }
+                }) { Text(strings.delete, color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Annulla") } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(strings.cancel) } }
         )
     }
 }
 
 @Composable
 private fun ProductCard(product: ProductWithSupplier, onEdit: (ProductWithSupplier) -> Unit, onDelete: (ProductWithSupplier) -> Unit) {
+    val strings = LocalStrings.current
     val stockColor = when {
         product.quantity == 0 -> Danger
         product.minimumQuantity > 0 && product.quantity < product.minimumQuantity -> Warning
@@ -134,7 +137,7 @@ private fun ProductCard(product: ProductWithSupplier, onEdit: (ProductWithSuppli
                     Text(product.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(Modifier.width(8.dp))
                     if (!product.active) {
-                        Badge { Text("Inattivo") }
+                        Badge { Text(strings.inactiveLabel) }
                     }
                 }
                 Text("Cod: ${product.code}", fontSize = 12.sp, color = Color.Gray)
@@ -143,11 +146,11 @@ private fun ProductCard(product: ProductWithSupplier, onEdit: (ProductWithSuppli
                     Text("Stock: ${product.quantity}", fontSize = 12.sp, color = stockColor, fontWeight = FontWeight.Medium)
                     if (product.category.isNotEmpty()) Text(product.category, fontSize = 11.sp, color = Color.Gray)
                 }
-                if (product.supplierName != null) Text("Fornitore: ${product.supplierName}", fontSize = 11.sp, color = Color.Gray)
+                if (product.supplierName != null) Text("${strings.supplier}: ${product.supplierName}", fontSize = 11.sp, color = Color.Gray)
             }
             Column(horizontalAlignment = Alignment.End) {
-                IconButton(onClick = { onEdit(product) }) { Icon(Icons.Default.Edit, "Modifica", modifier = Modifier.size(20.dp)) }
-                IconButton(onClick = { onDelete(product) }) { Icon(Icons.Default.Delete, "Elimina", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
+                IconButton(onClick = { onEdit(product) }) { Icon(Icons.Default.Edit, strings.edit, modifier = Modifier.size(20.dp)) }
+                IconButton(onClick = { onDelete(product) }) { Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
             }
         }
     }
@@ -161,6 +164,7 @@ private fun ProductDialog(
     onDismiss: () -> Unit,
     onSave: (ProductEntity) -> Unit
 ) {
+    val strings = LocalStrings.current
     var code by remember { mutableStateOf(product?.code ?: "") }
     var name by remember { mutableStateOf(product?.name ?: "") }
     var description by remember { mutableStateOf(product?.description ?: "") }
@@ -183,61 +187,61 @@ private fun ProductDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (product == null) "Nuovo prodotto" else "Modifica prodotto") },
+        title = { Text(if (product == null) strings.newProduct else strings.editProduct) },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
-                    OutlinedTextField(value = code, onValueChange = { code = it; codeError = false }, label = { Text("Codice *") }, isError = codeError, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedTextField(value = code, onValueChange = { code = it; codeError = false }, label = { Text(strings.productCode) }, isError = codeError, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 }
                 item {
-                    OutlinedTextField(value = name, onValueChange = { name = it; nameError = false }, label = { Text("Nome *") }, isError = nameError, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedTextField(value = name, onValueChange = { name = it; nameError = false }, label = { Text(strings.productName) }, isError = nameError, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 }
                 item {
-                    OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Descrizione") }, modifier = Modifier.fillMaxWidth(), maxLines = 3)
+                    OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(strings.description) }, modifier = Modifier.fillMaxWidth(), maxLines = 3)
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = price, onValueChange = { price = it; priceError = false }, label = { Text("Prezzo *") }, isError = priceError, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                        OutlinedTextField(value = acquisitionCost, onValueChange = { acquisitionCost = it }, label = { Text("Costo acq.") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                        OutlinedTextField(value = price, onValueChange = { price = it; priceError = false }, label = { Text(strings.price) }, isError = priceError, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                        OutlinedTextField(value = acquisitionCost, onValueChange = { acquisitionCost = it }, label = { Text(strings.acquisitionCost) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                     }
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = quantity, onValueChange = { quantity = it }, label = { Text("Quantità") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
-                        OutlinedTextField(value = minQty, onValueChange = { minQty = it }, label = { Text("Qtà min") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                        OutlinedTextField(value = quantity, onValueChange = { quantity = it }, label = { Text(strings.quantity) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                        OutlinedTextField(value = minQty, onValueChange = { minQty = it }, label = { Text(strings.minimumQuantity) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                     }
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = vatRate, onValueChange = { vatRate = it }, label = { Text("IVA %") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                        OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Categoria") }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = vatRate, onValueChange = { vatRate = it }, label = { Text(strings.vatRate) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                        OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text(strings.category) }, modifier = Modifier.weight(1f), singleLine = true)
                     }
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = altSku, onValueChange = { altSku = it }, label = { Text("SKU alt.") }, modifier = Modifier.weight(1f), singleLine = true)
-                        OutlinedTextField(value = uom, onValueChange = { uom = it }, label = { Text("U.M.") }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = altSku, onValueChange = { altSku = it }, label = { Text(strings.alternativeSku) }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = uom, onValueChange = { uom = it }, label = { Text(strings.unitOfMeasure) }, modifier = Modifier.weight(1f), singleLine = true)
                     }
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = warehousePosition, onValueChange = { warehousePosition = it }, label = { Text("Posizione mag.") }, modifier = Modifier.weight(1f), singleLine = true)
-                        OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("Peso (kg)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                        OutlinedTextField(value = warehousePosition, onValueChange = { warehousePosition = it }, label = { Text(strings.warehousePosition) }, modifier = Modifier.weight(1f), singleLine = true)
+                        OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text(strings.weight) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                     }
                 }
                 item {
                     // Supplier dropdown
                     ExposedDropdownMenuBox(expanded = showSupplierDropdown, onExpandedChange = { showSupplierDropdown = it }) {
                         OutlinedTextField(
-                            value = suppliers.find { it.id == selectedSupplierId }?.companyName ?: "Nessun fornitore",
+                            value = suppliers.find { it.id == selectedSupplierId }?.companyName ?: strings.selectSupplier,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Fornitore") },
+                            label = { Text(strings.supplier) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showSupplierDropdown) },
                             modifier = Modifier.fillMaxWidth().menuAnchor()
                         )
                         ExposedDropdownMenu(expanded = showSupplierDropdown, onDismissRequest = { showSupplierDropdown = false }) {
-                            DropdownMenuItem(text = { Text("Nessun fornitore") }, onClick = { selectedSupplierId = null; showSupplierDropdown = false })
+                            DropdownMenuItem(text = { Text(strings.selectSupplier) }, onClick = { selectedSupplierId = null; showSupplierDropdown = false })
                             suppliers.forEach { supplier ->
                                 DropdownMenuItem(text = { Text(supplier.companyName) }, onClick = { selectedSupplierId = supplier.id; showSupplierDropdown = false })
                             }
@@ -247,7 +251,7 @@ private fun ProductDialog(
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = active, onCheckedChange = { active = it })
-                        Text("Prodotto attivo")
+                        Text(strings.activeLabel)
                     }
                 }
             }
@@ -271,8 +275,8 @@ private fun ProductDialog(
                         vatRate = vatRate.toDoubleOrNull() ?: 22.0
                     ))
                 }
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }

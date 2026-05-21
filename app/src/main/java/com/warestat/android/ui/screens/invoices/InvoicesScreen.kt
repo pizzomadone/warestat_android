@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.dao.InvoiceItemWithProduct
 import com.warestat.android.data.database.dao.InvoiceWithCustomer
 import com.warestat.android.data.database.entity.*
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.util.DateUtils
 import com.warestat.android.util.InvoicePDFGenerator
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun InvoicesScreen(viewModel: InvoicesViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
     var editingInvoice by remember { mutableStateOf<InvoiceWithCustomer?>(null) }
@@ -41,18 +43,18 @@ fun InvoicesScreen(viewModel: InvoicesViewModel = hiltViewModel()) {
 
     LaunchedEffect(state.successMessage, state.error) {
         state.successMessage?.let { scope.launch { snackbarHostState.showSnackbar(it) }; viewModel.clearMessages() }
-        state.error?.let { scope.launch { snackbarHostState.showSnackbar("Errore: $it") }; viewModel.clearMessages() }
+        state.error?.let { scope.launch { snackbarHostState.showSnackbar("${strings.error}$it") }; viewModel.clearMessages() }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            Text("Fatture", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(strings.invoicesTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("${state.invoices.size} fatture", style = MaterialTheme.typography.bodyMedium)
+                Text("${state.invoices.size} ${strings.invoicesTitle.lowercase()}", style = MaterialTheme.typography.bodyMedium)
                 FloatingActionButton(onClick = { editingInvoice = null; showDialog = true }, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Default.Add, "Nuova fattura")
+                    Icon(Icons.Default.Add, strings.newInvoiceDialog)
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -88,14 +90,14 @@ fun InvoicesScreen(viewModel: InvoicesViewModel = hiltViewModel()) {
     showDeleteConfirm?.let { invoice ->
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("Elimina fattura") },
-            text = { Text("Eliminare fattura ${invoice.number}?") },
+            title = { Text(strings.deleteInvoiceTitle) },
+            text = { Text("${strings.delete} ${invoice.number}?") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteInvoice(invoice); showDeleteConfirm = null }) {
-                    Text("Elimina", color = MaterialTheme.colorScheme.error)
+                    Text(strings.delete, color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Annulla") } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(strings.cancel) } }
         )
     }
 }
@@ -112,6 +114,7 @@ private fun InvoiceCard(
     onDelete: (InvoiceWithCustomer) -> Unit,
     onPdf: (InvoiceWithCustomer) -> Unit
 ) {
+    val strings = LocalStrings.current
     val statusColor = when (invoice.status) {
         "Draft" -> Color.Gray
         "Issued" -> Secondary
@@ -124,21 +127,21 @@ private fun InvoiceCard(
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Fattura ${invoice.number}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("${strings.invoicesTitle.dropLast(1)} ${invoice.number}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(Modifier.width(8.dp))
                     Badge(containerColor = statusColor) { Text(invoice.status, fontSize = 10.sp) }
                 }
-                Text(invoice.customerName ?: "Cliente non trovato", fontSize = 12.sp, color = Color.Gray)
+                Text(invoice.customerName ?: strings.customerNotFound, fontSize = 12.sp, color = Color.Gray)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(DateUtils.formatDate(invoice.date), fontSize = 11.sp, color = Color.Gray)
-                    Text("Imponibile: € %.2f".format(invoice.taxableAmount), fontSize = 12.sp)
+                    Text("${strings.taxable}: € %.2f".format(invoice.taxableAmount), fontSize = 12.sp)
                 }
-                Text("Totale: € %.2f".format(invoice.total), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Success)
+                Text("${strings.total}: € %.2f".format(invoice.total), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Success)
             }
             Column(horizontalAlignment = Alignment.End) {
-                IconButton(onClick = { onPdf(invoice) }) { Icon(Icons.Default.PictureAsPdf, "PDF", tint = Danger, modifier = Modifier.size(20.dp)) }
-                IconButton(onClick = { onEdit(invoice) }) { Icon(Icons.Default.Edit, "Modifica", modifier = Modifier.size(20.dp)) }
-                IconButton(onClick = { onDelete(invoice) }) { Icon(Icons.Default.Delete, "Elimina", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
+                IconButton(onClick = { onPdf(invoice) }) { Icon(Icons.Default.PictureAsPdf, strings.pdf, tint = Danger, modifier = Modifier.size(20.dp)) }
+                IconButton(onClick = { onEdit(invoice) }) { Icon(Icons.Default.Edit, strings.edit, modifier = Modifier.size(20.dp)) }
+                IconButton(onClick = { onDelete(invoice) }) { Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
             }
         }
     }
@@ -155,6 +158,7 @@ private fun InvoiceDialog(
     onDismiss: () -> Unit,
     onSave: (InvoiceEntity, List<InvoiceItemEntity>) -> Unit
 ) {
+    val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
     var number by remember { mutableStateOf(invoice?.number ?: "") }
     var selectedCustomerId by remember { mutableStateOf(invoice?.customerId) }
@@ -179,17 +183,17 @@ private fun InvoiceDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (invoice == null) "Nuova fattura" else "Modifica fattura ${invoice.number}") },
+        title = { Text(if (invoice == null) strings.newInvoiceDialog else "${strings.editInvoiceDialog}${invoice.number}") },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
-                    OutlinedTextField(value = number, onValueChange = { number = it }, label = { Text("Numero fattura") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedTextField(value = number, onValueChange = { number = it }, label = { Text(strings.invoiceNumber) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 }
                 item {
                     ExposedDropdownMenuBox(expanded = showCustomerDropdown, onExpandedChange = { showCustomerDropdown = it }) {
                         OutlinedTextField(
-                            value = customers.find { it.id == selectedCustomerId }?.let { "${it.firstName} ${it.lastName}" } ?: "Seleziona cliente *",
-                            onValueChange = {}, readOnly = true, label = { Text("Cliente *") }, isError = customerError,
+                            value = customers.find { it.id == selectedCustomerId }?.let { "${it.firstName} ${it.lastName}" } ?: strings.selectCustomerHint,
+                            onValueChange = {}, readOnly = true, label = { Text(strings.customerField) }, isError = customerError,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCustomerDropdown) },
                             modifier = Modifier.fillMaxWidth().menuAnchor()
                         )
@@ -203,7 +207,7 @@ private fun InvoiceDialog(
                 }
                 item {
                     ExposedDropdownMenuBox(expanded = showStatusDropdown, onExpandedChange = { showStatusDropdown = it }) {
-                        OutlinedTextField(value = status, onValueChange = {}, readOnly = true, label = { Text("Stato") },
+                        OutlinedTextField(value = status, onValueChange = {}, readOnly = true, label = { Text(strings.status) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showStatusDropdown) },
                             modifier = Modifier.fillMaxWidth().menuAnchor(), singleLine = true)
                         ExposedDropdownMenu(expanded = showStatusDropdown, onDismissRequest = { showStatusDropdown = false }) {
@@ -213,7 +217,7 @@ private fun InvoiceDialog(
                         }
                     }
                 }
-                item { Text("Righe fattura", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold) }
+                item { Text(strings.invoiceLinesSection, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold) }
                 items(invoiceItems.size) { idx ->
                     InvoiceLineRow(
                         item = invoiceItems[idx], products = products,
@@ -223,21 +227,21 @@ private fun InvoiceDialog(
                 }
                 item {
                     OutlinedButton(onClick = { invoiceItems = invoiceItems + InvoiceLineData() }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Aggiungi riga")
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text(strings.addLine)
                     }
                 }
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Imponibile:", fontSize = 13.sp); Text("€ %.2f".format(taxable), fontSize = 13.sp)
+                                Text("${strings.taxable}:", fontSize = 13.sp); Text("€ %.2f".format(taxable), fontSize = 13.sp)
                             }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("IVA:", fontSize = 13.sp); Text("€ %.2f".format(vatAmount), fontSize = 13.sp)
+                                Text("${strings.vat}:", fontSize = 13.sp); Text("€ %.2f".format(vatAmount), fontSize = 13.sp)
                             }
                             Divider()
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Totale:", fontWeight = FontWeight.Bold); Text("€ %.2f".format(total), fontWeight = FontWeight.Bold, color = Success)
+                                Text("${strings.total}:", fontWeight = FontWeight.Bold); Text("€ %.2f".format(total), fontWeight = FontWeight.Bold, color = Success)
                             }
                         }
                     }
@@ -262,9 +266,9 @@ private fun InvoiceDialog(
                     }
                     onSave(entity, items)
                 }
-            }) { Text("Salva") }
+            }) { Text(strings.save) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } }
     )
 }
 
@@ -284,14 +288,15 @@ private fun InvoiceLineRow(
     onUpdate: (InvoiceLineData) -> Unit,
     onRemove: () -> Unit
 ) {
+    val strings = LocalStrings.current
     var showProductDropdown by remember { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ExposedDropdownMenuBox(expanded = showProductDropdown, onExpandedChange = { showProductDropdown = it }) {
                 OutlinedTextField(
-                    value = if (item.productId > 0) item.productName else "Seleziona prodotto",
-                    onValueChange = {}, readOnly = true, label = { Text("Prodotto") },
+                    value = if (item.productId > 0) item.productName else strings.selectProduct,
+                    onValueChange = {}, readOnly = true, label = { Text(strings.product) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showProductDropdown) },
                     modifier = Modifier.fillMaxWidth().menuAnchor(), singleLine = true
                 )
@@ -306,13 +311,13 @@ private fun InvoiceLineRow(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(value = item.quantity.toString(), onValueChange = { onUpdate(item.copy(quantity = it.toIntOrNull() ?: 1)) },
-                    label = { Text("Qtà") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+                    label = { Text(strings.qty) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 OutlinedTextField(value = item.unitPrice, onValueChange = { onUpdate(item.copy(unitPrice = it)) },
-                    label = { Text("Prezzo") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                    label = { Text(strings.price) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                 OutlinedTextField(value = item.vatRate.toString(), onValueChange = { onUpdate(item.copy(vatRate = it.toDoubleOrNull() ?: 22.0)) },
-                    label = { Text("IVA%") }, modifier = Modifier.weight(0.8f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                    label = { Text(strings.vatPercent) }, modifier = Modifier.weight(0.8f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                 IconButton(onClick = onRemove, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.Delete, "Rimuovi", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Delete, strings.remove, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                 }
             }
         }

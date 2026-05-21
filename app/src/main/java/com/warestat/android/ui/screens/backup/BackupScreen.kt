@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.viewmodel.BackupViewModel
 import kotlinx.coroutines.launch
@@ -27,6 +28,7 @@ import java.util.*
 
 @Composable
 fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -38,7 +40,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
 
     LaunchedEffect(state.successMessage, state.error) {
         state.successMessage?.let { scope.launch { snackbarHostState.showSnackbar(it) }; viewModel.clearMessages() }
-        state.error?.let { scope.launch { snackbarHostState.showSnackbar("Errore: $it") }; viewModel.clearMessages() }
+        state.error?.let { scope.launch { snackbarHostState.showSnackbar("${strings.error}$it") }; viewModel.clearMessages() }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
@@ -47,7 +49,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Text("Backup & Ripristino", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(strings.backupTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
 
             // Action buttons
@@ -65,7 +67,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                             Icon(Icons.Default.Backup, null, modifier = Modifier.size(18.dp))
                         }
                         Spacer(Modifier.width(4.dp))
-                        Text("Crea Backup")
+                        Text(strings.createBackup)
                     }
                     OutlinedButton(
                         onClick = { restoreLauncher.launch("*/*") },
@@ -74,7 +76,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                     ) {
                         Icon(Icons.Default.Restore, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Ripristina")
+                        Text(strings.restore)
                     }
                 }
             }
@@ -83,12 +85,12 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
             item {
                 Card(elevation = CardDefaults.cardElevation(1.dp)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Impostazioni Backup", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(strings.backupSettings, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
 
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text("Backup automatico", fontWeight = FontWeight.Medium)
-                                Text("Esegui backup giornaliero automaticamente", fontSize = 12.sp, color = Color.Gray)
+                                Text(strings.autoBackup, fontWeight = FontWeight.Medium)
+                                Text(strings.autoBackupDesc, fontSize = 12.sp, color = Color.Gray)
                             }
                             Switch(checked = state.autoBackupEnabled, onCheckedChange = { viewModel.setAutoBackup(it) })
                         }
@@ -96,7 +98,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                         Divider()
 
                         Column {
-                            Text("Conserva backup per: ${state.retentionDays} giorni", fontWeight = FontWeight.Medium)
+                            Text("${strings.availableBackups}: ${state.retentionDays}", fontWeight = FontWeight.Medium)
                             Spacer(Modifier.height(4.dp))
                             Slider(
                                 value = state.retentionDays.toFloat(),
@@ -105,8 +107,8 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                                 steps = 28
                             )
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("1 giorno", fontSize = 11.sp, color = Color.Gray)
-                                Text("30 giorni", fontSize = 11.sp, color = Color.Gray)
+                                Text("1", fontSize = 11.sp, color = Color.Gray)
+                                Text("30", fontSize = 11.sp, color = Color.Gray)
                             }
                         }
                     }
@@ -120,8 +122,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                         Icon(Icons.Default.Info, null, tint = Secondary, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "I backup vengono salvati nella memoria interna del dispositivo. " +
-                            "Il ripristino sovrascriverà tutti i dati attuali — un backup di sicurezza verrà creato automaticamente prima del ripristino.",
+                            "${strings.backupSettings}. ${strings.restoreWarning}",
                             fontSize = 12.sp, color = Color.DarkGray
                         )
                     }
@@ -131,7 +132,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
             // Backup list
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Backup disponibili", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text(strings.availableBackups, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Text("${state.backupFiles.size} file", fontSize = 12.sp, color = Color.Gray)
                 }
             }
@@ -140,13 +141,13 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                         Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            Text("Nessun backup disponibile", color = Color.Gray)
+                            Text(strings.noBackupAvailable, color = Color.Gray)
                         }
                     }
                 }
             } else {
                 items(state.backupFiles, key = { it.name }) { file ->
-                    BackupFileCard(file, onRestore = { showRestoreConfirm = file })
+                    BackupFileCard(file, restoreLabel = strings.restore, onRestore = { showRestoreConfirm = file })
                 }
             }
         }
@@ -157,17 +158,17 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
     showRestoreConfirm?.let { file ->
         AlertDialog(
             onDismissRequest = { showRestoreConfirm = null },
-            title = { Text("Ripristina backup") },
+            title = { Text(strings.restoreBackupTitle) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Ripristinare il backup:")
+                    Text(strings.restoreBackupTitle + ":")
                     Text(file.name, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F5))) {
                         Row(Modifier.padding(8.dp)) {
                             Icon(Icons.Default.Warning, null, tint = Danger, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Tutti i dati attuali verranno sovrascritti!", fontSize = 12.sp, color = Danger)
+                            Text(strings.restoreWarning, fontSize = 12.sp, color = Danger)
                         }
                     }
                 }
@@ -182,15 +183,15 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                         showRestoreConfirm = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Danger)
-                ) { Text("Ripristina") }
+                ) { Text(strings.restore) }
             },
-            dismissButton = { TextButton(onClick = { showRestoreConfirm = null }) { Text("Annulla") } }
+            dismissButton = { TextButton(onClick = { showRestoreConfirm = null }) { Text(strings.cancel) } }
         )
     }
 }
 
 @Composable
-private fun BackupFileCard(file: File, onRestore: () -> Unit) {
+private fun BackupFileCard(file: File, restoreLabel: String, onRestore: () -> Unit) {
     val sdf = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
     val dateStr = sdf.format(Date(file.lastModified()))
     val sizeKb = file.length() / 1024
@@ -207,7 +208,7 @@ private fun BackupFileCard(file: File, onRestore: () -> Unit) {
                 }
             }
             IconButton(onClick = onRestore) {
-                Icon(Icons.Default.Restore, "Ripristina", tint = Primary)
+                Icon(Icons.Default.Restore, restoreLabel, tint = Primary)
             }
         }
     }

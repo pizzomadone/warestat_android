@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.dao.OrderWithCustomer
+import com.warestat.android.i18n.LocalStrings
 import com.warestat.android.ui.theme.*
 import com.warestat.android.util.DateUtils
 import com.warestat.android.util.ReportPDFGenerator
@@ -27,6 +28,7 @@ import java.util.Calendar
 
 @Composable
 fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
+    val strings = LocalStrings.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -34,13 +36,13 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     var showEndDatePicker by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Report Vendite", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(strings.salesReportTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
 
         // Date range filter
         Card(elevation = CardDefaults.cardElevation(1.dp)) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Periodo", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(strings.periodLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { showStartDatePicker = true }, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(16.dp))
@@ -55,7 +57,7 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(7 to "7gg", 30 to "30gg", 90 to "3 mesi", 365 to "Anno").forEach { (days, label) ->
+                    listOf(7 to strings.sevenDays, 30 to strings.thirtyDays, 90 to strings.threeMonths, 365 to strings.yearLabel).forEach { (days, label) ->
                         OutlinedButton(onClick = {
                             val end = System.currentTimeMillis()
                             val start = end - days * 86_400_000L
@@ -69,9 +71,9 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
 
         // Stats summary
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatCard(Modifier.weight(1f), "Ordini", state.totalOrders.toString(), Secondary)
-            StatCard(Modifier.weight(1f), "Totale", "€ %.2f".format(state.totalSales), Success)
-            StatCard(Modifier.weight(1f), "Media", "€ %.2f".format(if (state.totalOrders > 0) state.totalSales / state.totalOrders else 0.0), Warning)
+            StatCard(Modifier.weight(1f), strings.ordersLabel, state.totalOrders.toString(), Secondary)
+            StatCard(Modifier.weight(1f), strings.total, "€ %.2f".format(state.totalSales), Success)
+            StatCard(Modifier.weight(1f), strings.averageLabel, "€ %.2f".format(if (state.totalOrders > 0) state.totalSales / state.totalOrders else 0.0), Warning)
         }
         Spacer(Modifier.height(8.dp))
 
@@ -80,16 +82,16 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
             OutlinedButton(onClick = { exportCsv(context, state.salesData) }, modifier = Modifier.weight(1f)) {
                 Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Esporta CSV", fontSize = 12.sp)
+                Text(strings.exportCsv, fontSize = 12.sp)
             }
             Button(onClick = {
                 scope.launch {
                     val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                    val columns = listOf("#", "Cliente", "Data", "Stato", "Totale")
+                    val columns = listOf("#", strings.customer, strings.dateCol, strings.status, strings.total)
                     val rows = state.salesData.map { o ->
                         listOf(o.id.toString(), o.customerName ?: "-", sdf.format(java.util.Date(o.orderDate)), o.status, "€ %.2f".format(o.total))
                     }
-                    val title = "Report Vendite"
+                    val title = strings.salesReportTitle
                     val subtitle = "${sdf.format(java.util.Date(state.startDate))} - ${sdf.format(java.util.Date(state.endDate))}"
                     ReportPDFGenerator.generateSalesReport(context, rows, columns, title, subtitle, state.totalSales, state.totalOrders)
                         .onSuccess { uri ->
@@ -103,23 +105,23 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
             }, modifier = Modifier.weight(1f)) {
                 Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Esporta PDF", fontSize = 12.sp)
+                Text(strings.exportPdf, fontSize = 12.sp)
             }
         }
         Spacer(Modifier.height(8.dp))
 
         // Orders table
-        Text("${state.salesData.size} ordini nel periodo", style = MaterialTheme.typography.bodyMedium)
+        Text("${state.salesData.size} ${strings.ordersLabel.lowercase()}", style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(4.dp))
 
         Card(elevation = CardDefaults.cardElevation(1.dp)) {
             Column {
                 Row(Modifier.fillMaxWidth().background(Primary).padding(8.dp)) {
                     Text("#", color = Color.White, modifier = Modifier.width(40.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Cliente", color = Color.White, modifier = Modifier.weight(1f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Data", color = Color.White, modifier = Modifier.width(80.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Stato", color = Color.White, modifier = Modifier.width(70.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Totale", color = Color.White, modifier = Modifier.width(70.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(strings.customer, color = Color.White, modifier = Modifier.weight(1f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(strings.dateCol, color = Color.White, modifier = Modifier.width(80.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(strings.status, color = Color.White, modifier = Modifier.width(70.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(strings.total, color = Color.White, modifier = Modifier.width(70.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     items(state.salesData.take(100), key = { it.id }) { order ->
@@ -127,7 +129,7 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     }
                     if (state.salesData.size > 100) {
                         item {
-                            Text("... e altri ${state.salesData.size - 100} ordini", modifier = Modifier.padding(8.dp), color = Color.Gray, fontSize = 11.sp)
+                            Text("... ${state.salesData.size - 100} ${strings.ordersLabel.lowercase()}", modifier = Modifier.padding(8.dp), color = Color.Gray, fontSize = 11.sp)
                         }
                     }
                 }
@@ -139,14 +141,16 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
         DatePickerModal(
             initialDate = state.startDate,
             onDateSelected = { date -> viewModel.setDateRange(date, state.endDate); showStartDatePicker = false },
-            onDismiss = { showStartDatePicker = false }
+            onDismiss = { showStartDatePicker = false },
+            cancelLabel = strings.cancel
         )
     }
     if (showEndDatePicker) {
         DatePickerModal(
             initialDate = state.endDate,
             onDateSelected = { date -> viewModel.setDateRange(state.startDate, date); showEndDatePicker = false },
-            onDismiss = { showEndDatePicker = false }
+            onDismiss = { showEndDatePicker = false },
+            cancelLabel = strings.cancel
         )
     }
 }
@@ -178,14 +182,14 @@ private fun OrderRow(order: OrderWithCustomer) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DatePickerModal(initialDate: Long, onDateSelected: (Long) -> Unit, onDismiss: () -> Unit) {
+private fun DatePickerModal(initialDate: Long, onDateSelected: (Long) -> Unit, onDismiss: () -> Unit, cancelLabel: String) {
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDate)
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = { datePickerState.selectedDateMillis?.let { onDateSelected(it) } ?: onDismiss() }) { Text("OK") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(cancelLabel) } }
     ) {
         DatePicker(state = datePickerState)
     }
@@ -204,7 +208,7 @@ private fun exportCsv(context: android.content.Context, orders: List<OrderWithCu
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/csv"; putExtra(android.content.Intent.EXTRA_STREAM, uri); addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(android.content.Intent.createChooser(intent, "Esporta CSV"))
+        context.startActivity(android.content.Intent.createChooser(intent, "Export CSV"))
     } catch (e: Exception) {
         e.printStackTrace()
     }
