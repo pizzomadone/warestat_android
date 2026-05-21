@@ -255,7 +255,7 @@ private fun SupplierOrderDialog(
     LaunchedEffect(order?.id) {
         if (order != null && order.id > 0) {
             val items = loadItems(order.id)
-            orderItems = items.map { SupplierItemData(productId = it.productId, productName = it.productName ?: "", quantity = it.quantity, unitPrice = it.unitPrice) }
+            orderItems = items.map { SupplierItemData(productId = it.productId, productName = it.productName ?: "", quantity = it.quantity, unitPrice = it.unitPrice.toString()) }
         }
     }
 

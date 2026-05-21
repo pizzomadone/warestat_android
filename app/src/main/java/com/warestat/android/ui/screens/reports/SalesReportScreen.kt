@@ -84,9 +84,21 @@ fun SalesReportScreen(viewModel: ReportsViewModel = hiltViewModel()) {
             }
             Button(onClick = {
                 scope.launch {
-                    val generator = ReportPDFGenerator(context)
-                    val uri = generator.generateSalesReport(state.salesData, state.startDate, state.endDate, state.totalSales, state.totalOrders)
-                    uri?.let { generator.openPdf(context, it) }
+                    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                    val columns = listOf("#", "Cliente", "Data", "Stato", "Totale")
+                    val rows = state.salesData.map { o ->
+                        listOf(o.id.toString(), o.customerName ?: "-", sdf.format(java.util.Date(o.orderDate)), o.status, "€ %.2f".format(o.total))
+                    }
+                    val title = "Report Vendite"
+                    val subtitle = "${sdf.format(java.util.Date(state.startDate))} - ${sdf.format(java.util.Date(state.endDate))}"
+                    ReportPDFGenerator.generateSalesReport(context, rows, columns, title, subtitle, state.totalSales, state.totalOrders)
+                        .onSuccess { uri ->
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, "application/pdf")
+                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(intent)
+                        }
                 }
             }, modifier = Modifier.weight(1f)) {
                 Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(16.dp))

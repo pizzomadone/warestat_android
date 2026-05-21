@@ -13,13 +13,12 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class BarcodeScannerUtil(
-    private val context: Context,
-    private val onBarcodeDetected: (String) -> Unit
+    private val context: Context
 ) {
     private var cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var cameraProvider: ProcessCameraProvider? = null
 
-    fun startScanning(lifecycleOwner: LifecycleOwner, previewView: PreviewView) {
+    fun startScanning(lifecycleOwner: LifecycleOwner, previewView: PreviewView, onBarcodeDetected: (String) -> Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             cameraProvider = cameraProviderFuture.get()

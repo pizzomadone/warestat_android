@@ -169,7 +169,7 @@ private fun InvoiceDialog(
             number = getNextNumber()
         } else if (invoice.id > 0) {
             val items = loadItems(invoice.id)
-            invoiceItems = items.map { InvoiceLineData(productId = it.productId, productName = it.productName ?: "", quantity = it.quantity, unitPrice = it.unitPrice, vatRate = it.vatRate) }
+            invoiceItems = items.map { InvoiceLineData(productId = it.productId, productName = it.productName ?: "", quantity = it.quantity, unitPrice = it.unitPrice.toString(), vatRate = it.vatRate) }
         }
     }
 

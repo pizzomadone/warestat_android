@@ -150,7 +150,7 @@ private fun MinimumStockDialog(
     }
 
     AlertDialog(onDismissRequest = onDismiss,
-        title = { Text("Stock minimo: ${stock.productName}") },
+        title = { Text("Stock minimo: ${stock.name}") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

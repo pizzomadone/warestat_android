@@ -19,6 +19,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warestat.android.data.database.dao.OrderItemWithProduct
 import com.warestat.android.data.database.dao.OrderWithCustomer
+import com.warestat.android.data.database.dao.ProductWithSupplier
 import com.warestat.android.data.database.entity.*
 import com.warestat.android.ui.theme.*
 import com.warestat.android.util.DateUtils
@@ -171,7 +172,7 @@ private fun OrderDialog(
     LaunchedEffect(order?.id) {
         if (order != null && order.id > 0) {
             val items = loadItems(order.id)
-            orderItems = items.map { OrderItemData(productId = it.productId, productName = it.productName ?: "", quantity = it.quantity, unitPrice = it.unitPrice) }
+            orderItems = items.map { OrderItemData(productId = it.productId, productName = it.productName ?: "", quantity = it.quantity, unitPrice = it.unitPrice.toString()) }
         }
     }
 
@@ -267,8 +268,7 @@ private fun OrderDialog(
                         orderDate = order?.orderDate ?: System.currentTimeMillis(),
                         status = status, total = total,
                         paymentStatus = paymentStatus,
-                        paidAmount = paidAmount.toDoubleOrNull() ?: 0.0,
-                        notes = notes.trim()
+                        paidAmount = paidAmount.toDoubleOrNull() ?: 0.0
                     )
                     val items = orderItems.filter { it.productId > 0 }.map {
                         OrderItemEntity(orderId = entity.id, productId = it.productId, quantity = it.quantity, unitPrice = it.unitPrice.toDoubleOrNull() ?: 0.0)
